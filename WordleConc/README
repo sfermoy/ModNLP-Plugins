@@ -1,0 +1,4 @@
+This is a test plugin, not quite ready for source code distribution. I
+wanted to test the processing libraries (http://processing.org) for
+visualisation, and using autojar (http://autojar.sourceforge.net) for
+self-contained packaging of the plugin. More to come soon...
