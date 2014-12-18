@@ -1,1 +1,16 @@
-Plugins are 
+These are plugins for the modnlp corpus browser; see
+
+https://sourceforge.net/projects/modnlp/
+
+They should be regarded as experimental, beta-level code.
+
+If you still want to use them, you could try
+
+Mosaic/  :  the concordance mosaic visualisation 
+
+and the (somewhat silly)
+
+WordleConc/ : which illustrates how plugins that use processing.org
+              libraries can be created.
+
+ 
