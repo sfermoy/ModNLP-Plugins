@@ -85,7 +85,6 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 
-
 import prefuse.Constants;
 import prefuse.Display;
 import prefuse.Visualization;

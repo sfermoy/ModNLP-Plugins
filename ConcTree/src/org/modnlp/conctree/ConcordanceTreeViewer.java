@@ -35,6 +35,7 @@ import java.awt.FlowLayout;
 import java.awt.event.MouseEvent;
 
 import java.io.File;
+import java.lang.Integer;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -65,6 +66,7 @@ import prefuse.data.SpanningTree;
 import prefuse.util.ui.JFastLabel;
 import prefuse.util.FontLib;
 import prefuse.visual.VisualItem;
+import java.io.IOException;
 
 /**
  *  Basic concordance tree generator. A concordance tree is a prefix
@@ -97,14 +99,16 @@ public class ConcordanceTreeViewer extends JFrame
 
   private Thread thread;
   private JFrame thisFrame = null;
-  private Tree tree = null;
+  //private Tree tree = null;
 
 
   JLabel statsLabel = new JLabel("                            ");
-  SubcorpusCaseStatusPanel sccsPanel;
+  SubcorpusCaseStatusPanel sccsPanel = new SubcorpusCaseStatusPanel(null);
 
   private JProgressBar progressBar;
   private ConcordanceVector concVector =  null;
+  private int language =  modnlp.Constants.LANG_EN;
+
   JPanel tpanel = new JPanel(new BorderLayout());
 
 
@@ -193,8 +197,6 @@ public class ConcordanceTreeViewer extends JFrame
             alertWindow("Error downloading concordances\n!"+e);
           }}}
       );
-
-
 
     JPanel pas = new JPanel();
     pas.add(uldButton);
@@ -305,13 +307,17 @@ public class ConcordanceTreeViewer extends JFrame
         //setDisplay(new ConcordanceTree(),1);
         //tree = null;
         boolean inittree = true;
-        sccsPanel.updateStatus();
-        //ConcordanceObject[] va =  parent.getConcArray().concArray;
-        //String tknregexp  = parent.getClientProperties().getProperty("tokeniser.regexp");
+
+        if (parent != null){
+          concVector = parent.getConcordanceVector();
+          sccsPanel.updateStatus();
+          language = parent.getLanguage();
+        }
+        
+
         Vector columns = new Vector();
         Tokeniser ss;
-        int la = parent.getLanguage();
-        switch (la) {
+        switch (language) {
         case modnlp.Constants.LANG_EN:
           ss = new TokeniserRegex("");
           break;
@@ -327,17 +333,18 @@ public class ConcordanceTreeViewer extends JFrame
         //Arrays.fill(colcounts,0);
         int ct = 0;
         progressBar.setString("Growing tree...");
-        int nrows = parent.getConcordanceVector().size();
+        int nrows = concVector.size();
         progressBar.setMaximum(nrows);
         progressBar.setValue(ct++);
-        for (Iterator<ConcordanceObject> p = parent.getConcordanceVector().iterator(); p.hasNext(); ){
+        for (Iterator<ConcordanceObject> p = concVector.iterator(); p.hasNext(); ){
           ConcordanceObject co = p.next();
           progressBar.setValue(ct++);
           if (co == null)
             break;
           Object[] tkns;
           if (isLeftContext()){
-            Object[] t = (ss.split(co.getLeftContext()+" "+parent.getKeywordString())).toArray();
+            Object[] t = (ss.split(co.getLeftContext()+" "+co.getKeyword()))//parent.getKeywordString()))
+.toArray();
             tkns = new Object[t.length];
             int j = t.length-1;
             for(int i=0; i<t.length; i++)
@@ -540,7 +547,6 @@ public class ConcordanceTreeViewer extends JFrame
   }
 
   private void setDisplay(ConcordanceTree ct, int rc){
-    
     ct.setRowCount(rc);
     ct.setMinFreqRatio(1f/rc);
     if (isLeftContext())
@@ -574,10 +580,13 @@ public class ConcordanceTreeViewer extends JFrame
         Upload ulf = new Upload(new File(args[0]));
         ulf.readConcordances();
         cv.concVector = ulf.getConcordanceVector();
+        if (args.length > 1 && args[1] != null)
+          cv.language = new Integer(args[1]).intValue();
       }
       cv.activate();
     }
     catch(Exception e){
+      e.printStackTrace(System.err);
       System.err.println("Error reading "+args[0]+"\n"+e);
     }
   }
