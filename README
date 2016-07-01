@@ -2,15 +2,30 @@ These are plugins for the modnlp corpus browser; see
 
 https://sourceforge.net/projects/modnlp/
 
-They should be regarded as experimental, beta-level code.
+If you have downloaded of cloned the git repo for modnlp, you will
+probably want to uncompress this archive (or clone its git repo) into 
+modnlp/plugin (in the modnlp directory tree you have downloaded).
+
+If not, you will need to get the 3rd-party libraries from 
+
+https://datasync.ed.ac.uk/index.php/s/AoVdNhjhrSaIWx5
+
+(password: modnlp)
+
+and uncompreee it into the lib/ directory of this pluglin/ tree. 
+
+Theese plugins should be regarded as experimental, beta-level code.
 
 If you still want to use them, you could try
 
 Mosaic/  :  the concordance mosaic visualisation 
+
+ConcTree/ : A concordance tree
 
 and the (somewhat silly)
 
 WordleConc/ : which illustrates how plugins that use processing.org
               libraries can be created.
 
- 
+
+
