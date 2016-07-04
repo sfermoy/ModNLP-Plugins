@@ -1,9 +1,8 @@
-all: sign
+all: jar
 .PHONY: lib clean sign
 
 TARGET_JAR=lib/mosaic.jar
 CLASSPATH=src:../../src:lib/colt.jar:lib/prefuse.jar:lib/je.jar:lib/idx.jar:lib/teccli.jar
-
 JAVACFLAGS=-g -d classes -classpath $(CLASSPATH) 
 JAVAC=javac
 
