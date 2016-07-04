@@ -1,8 +1,8 @@
-all: sign
+all: jar
 .PHONY: lib clean sign jar
 
 TARGET_JAR=lib/wordleconc.jar
-CLASSPATH=src:lib/WordCram.jar:lib/core.jar:lib/cue.language.jar:lib/gluegen-rt-natives-linux-i586.jar:lib/gluegen-rt.jar:lib/jogl-all-natives-linux-i586.jar:lib/jogl-all.jar:lib/jsoup-1.3.3.jar:/home/luzs/lib/java/modnlp/teccli/src/
+CLASSPATH=src:../../src:lib/WordCram.jar:lib/core.jar:lib/cue.language.jar:lib/gluegen-rt-natives-linux-i586.jar:lib/gluegen-rt.jar:lib/jogl-all-natives-linux-i586.jar:lib/jogl-all.jar:lib/jsoup-1.3.3.jar:lib/idx.jar:lib/teccli.jar
 JAVACFLAGS=-g -d classes -classpath $(CLASSPATH) 
 JAVAC=javac
 

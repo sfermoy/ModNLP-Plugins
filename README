@@ -9,13 +9,17 @@ name org-modnlp/, by doing this, for instance:
 
 git clone ssh://luzs@git.code.sf.net/p/modnlp/plugins/code org-modnlp
 
-Otherwise you will need to get the 3rd-party libraries from:
+You will also need to get the 3rd-party libraries from:
 
 https://datasync.ed.ac.uk/index.php/s/AoVdNhjhrSaIWx5
 
 (password: modnlp)
 
-and uncompreee it into the lib/ directory of this pluglin/ tree. 
+and uncompress it into the 3rdpartylib/ directory of this pluglin/ tree. 
+
+If you have not cloned the plugin repo into and existing modnlp/ tree,
+you will also need to obtain the latest versions of idx.jar and
+teccli.jar, and place them into the 3rdpartylib/ directory.
 
 Theese plugins should be regarded as experimental, beta-level code.
 

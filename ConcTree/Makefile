@@ -1,9 +1,16 @@
-all: sign
+all: jar
 .PHONY: lib clean sign
 
 TARGET_JAR=lib/conctree.jar
+CLASSPATH=src:../../src:lib/colt.jar:lib/prefuse.jar:lib/je.jar:lib/idx.jar:lib/teccli.jar
 
-jar:
+JAVACFLAGS=-g -d classes -classpath $(CLASSPATH) 
+JAVAC=javac
+
+class:
+	$(JAVAC) $(JAVACFLAGS) src/org/modnlp/conctree/ConcordanceTreeViewer.java
+
+jar: class
 	java -jar ../autojar.jar -o $(TARGET_JAR) -vc classes:lib/prefuse.jar:lib/colt.jar:lib/je.jar -b  org/modnlp/conctree/*.class
 
 sign: jar
