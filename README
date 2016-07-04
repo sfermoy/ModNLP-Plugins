@@ -4,9 +4,12 @@ https://sourceforge.net/projects/modnlp/
 
 If you have downloaded of cloned the git repo for modnlp, you will
 probably want to uncompress this archive (or clone its git repo) into 
-modnlp/plugin (in the modnlp directory tree you have downloaded).
+modnlp/teccli (in the modnlp directory tree you have downloaded) with
+name org-modnlp/, by doing this, for instance:
 
-If not, you will need to get the 3rd-party libraries from 
+git clone ssh://luzs@git.code.sf.net/p/modnlp/plugins/code org-modnlp
+
+Otherwise you will need to get the 3rd-party libraries from:
 
 https://datasync.ed.ac.uk/index.php/s/AoVdNhjhrSaIWx5
 
@@ -27,5 +30,5 @@ and the (somewhat silly)
 WordleConc/ : which illustrates how plugins that use processing.org
               libraries can be created.
 
-
-
+In order to be able gto sign the jar files for JNLP deployement please
+contact me to get the keys, or create your own. 
