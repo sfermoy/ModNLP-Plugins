@@ -49,7 +49,10 @@ public class MosaicRenderer extends AbstractShapeRenderer
               
             double h=item.getSize();
             if(item.getSize()==1)
-                h= Math.round(heigth* ((Double) item.get("frequency")));
+                h= Math.floor(heigth* ((Double) item.get("frequency")));
+            //adding 1 to boxes to correct heights of cols, calculated in layout
+            int toAdd=(Integer)item.get("add1");
+            h+= toAdd;
                 
 		m_box.setFrame(item.getX(), item.getY(),98,h);
 

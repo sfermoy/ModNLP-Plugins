@@ -75,6 +75,7 @@ import prefuse.controls.AnchorUpdateControl;
 import prefuse.data.tuple.TupleSet;
 import prefuse.render.LabelRenderer;
 import java.net.URL;
+import javax.swing.JToggleButton;
 
 /**
  *
@@ -116,6 +117,7 @@ public class ConcordanceMosaic extends JFrame
   private BufferedReader input1;
   private BufferedReader input2;
 
+  public List<Double> columnHeigths = new ArrayList<Double>();
 
   public ConcordanceMosaic() {
     thisFrame = this;
@@ -155,19 +157,23 @@ public class ConcordanceMosaic extends JFrame
     }
 
     getContentPane().add(tpanel, BorderLayout.CENTER);
+            
         
-    JButton frequencyButton = new JButton("Concordance Word Frequency (WC)");
-    JButton relFrequencyButton = new JButton("WCRelative to corpus frequency");
-        
+    final JToggleButton frequencyButton = new JToggleButton("Column Word Frequency");
+    final JToggleButton relFrequencyButton = new JToggleButton("Column Collocation Strength");
+      
     JPanel pas = new JPanel();
        
     pas.add(frequencyButton);
     pas.add(relFrequencyButton);
+    frequencyButton.setSelected(true);
         
     frequencyButton.addActionListener(new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
-          //stop();
           is_rel_freq = false;
+          frequencyButton.setSelected(!is_rel_freq);
+          relFrequencyButton.setSelected(is_rel_freq);
+            
           MakeMosaic();
           //start();
         }});
@@ -177,6 +183,8 @@ public class ConcordanceMosaic extends JFrame
           public void actionPerformed(java.awt.event.ActionEvent evt) {
             //stop();
             is_rel_freq = true;
+            frequencyButton.setSelected(!is_rel_freq);
+            relFrequencyButton.setSelected(is_rel_freq);
             MakeMosaic();
             //sort parent
             //start();
@@ -239,7 +247,7 @@ public class ConcordanceMosaic extends JFrame
           BufferedReader(new
                          InputStreamReader(toturlConnection.getInputStream() ));
         result =Integer.parseInt(input1.readLine()); 
-        // System.out.println(result);
+                    
                     
         toturlConnection.disconnect();
                        
@@ -301,11 +309,12 @@ public class ConcordanceMosaic extends JFrame
         graph = new Graph();
         graph.addColumn("word", String.class);
         graph.addColumn("frequency", Double.class);
-        graph.addColumn("rel_frequency", Double.class);
+        graph.addColumn("rel_freq", Boolean.class);
         graph.addColumn("column", Integer.class);
         graph.addColumn("sentences", ArrayList.class);
         graph.addColumn("color", Integer.class);
-        //sentenceIndexToVisualitems =null;
+        graph.addColumn("add1", Integer.class);
+
         sentenceIndexToVisualitems = new HashMap<Integer, ArrayList<VisualItem> >();
 
 
@@ -382,6 +391,7 @@ public class ConcordanceMosaic extends JFrame
 
 
         }
+        columnHeigths = new ArrayList<Double>();
         //for each column
         for (int i = 0; i < 9; i++) {
           double rel_column_length = 0;
@@ -427,13 +437,13 @@ public class ConcordanceMosaic extends JFrame
           for (int x = 0; x < column.length; x++) {
 
 
-            int corpus_word_frequency = getNoOfTokens(column[x]);
+            int corpus_word_count = getNoOfTokens(column[x]);
             // Set infrequent words to a very small value
             if (counter.get(column[x])<2) {
               Rel_freq_counter.put(column[x], 0.0000000001);
             }
             else{
-              double temp=(( ((counter.get(column[x])*10.0) /nrows) / ( ((corpus_word_frequency*10.0)/getTotalNoTokens()) ) ));
+              double temp=(( ((counter.get(column[x])*10.0) /nrows) / ( ((corpus_word_count*10.0)/getTotalNoTokens()) ) ));
               if (temp<10000000.0) {
                 Rel_freq_counter.put(column[x], temp);
               } else {
@@ -475,10 +485,13 @@ public class ConcordanceMosaic extends JFrame
           for (int x = 0; x < column.length; x++) {
             Node n = graph.addNode();
             n.set("word", column[x]);
+            n.set("add1",0);
             if(is_rel_freq){
-              n.set("frequency", (Double) (Rel_freq_counter.get(column[x])/rel_column_length));
+                n.set("frequency", (Double) (Rel_freq_counter.get(column[x])));
+                n.set("rel_freq", true);
             }else{
-              n.set("frequency", (Double) (counter.get(column[x]) * 1.0) / nrows);
+                n.set("frequency", (Double) (counter.get(column[x]) * 1.0) / nrows);
+                n.set("rel_freq", false);
             }
 
             n.set("column", i);
@@ -495,15 +508,18 @@ public class ConcordanceMosaic extends JFrame
             if(i==4)
               color=6;
             n.set("color",color);
+            
+          }
+          columnHeigths.add(rel_column_length);
+          
+        }
 
 
-
-
-
+        if(is_rel_freq){
+        // we need to scale each box relative to a max col heigth
+            calculateRelFreqHeigths();
           }
 
-
-        }
         setDisplay();
         //add Visual item to hashmap with index of sentence numbers
         makeHashMap();
@@ -535,10 +551,27 @@ public class ConcordanceMosaic extends JFrame
                   
     }
 
-                    
+    }
+           
+     private void calculateRelFreqHeigths(){
+         columnHeigths.set(4, 0.0);
+         double maxH = Collections.max(columnHeigths);
                             
+         System.out.println(maxH);
+         System.out.println(columnHeigths);
+         for ( Iterator iter = graph.nodes(); iter.hasNext();){
+             Node item = (Node)iter.next();
+             String word = (String)item.get("word");
+             double value = (Double)item.get("frequency");
+             //scaled to be proportional to each word not column
+             value= (value)/(maxH);
+             item.set("frequency", value);
+             if( (Integer)item.get("column")==4){
+                 item.set("frequency", .99);
+             }
                 
   }
+     }
 
   private void setDisplay() {
     tpanel.removeAll();
@@ -616,16 +649,30 @@ public class ConcordanceMosaic extends JFrame
     //            ColorAction fill = new ColorAction("graph.nodes", 
     //                                                VisualItem.FILLCOLOR,
     //                                                ColorLib.rgb(0, 200, 0));
+      DataColorAction fill=null;
+      if( !is_rel_freq){
+         fill = new DataColorAction("graph.nodes", "color",
+                    Constants.NOMINAL,
+                    VisualItem.FILLCOLOR,
+                    new int[]{ColorLib.color(new java.awt.Color(181,222,223)),
+                    ColorLib.color(new java.awt.Color(88,170,143)),
+                    ColorLib.color(new java.awt.Color(148,222,196)),
+                    ColorLib.color(new java.awt.Color(194,228,216)),
+                    ColorLib.color(new java.awt.Color(125,232,212))
+                    });
+        }
+        else{
+         fill = new DataColorAction("graph.nodes", "color",
+                Constants.NOMINAL,
+                VisualItem.FILLCOLOR,
+                new int[]{ColorLib.color(new java.awt.Color(255,186,69)),
+                ColorLib.color(new java.awt.Color(225,204,164)),
+                ColorLib.color(new java.awt.Color(225,232,212)),
+                ColorLib.color(new java.awt.Color(255,198,92)),
+                ColorLib.color(new java.awt.Color(210,143,91))
+                });
         
-    DataColorAction fill = new DataColorAction("graph.nodes", "color",
-                                               Constants.NOMINAL,
-                                               VisualItem.FILLCOLOR,
-                                               new int[]{ColorLib.color(new java.awt.Color(181,222,223)),
-                                                         ColorLib.color(new java.awt.Color(88,170,143)),
-                                                         ColorLib.color(new java.awt.Color(148,222,196)),
-                                                         ColorLib.color(new java.awt.Color(194,228,216)),
-                                                         ColorLib.color(new java.awt.Color(125,232,212))
-                                               });
+        }
         
     // new int[]{ColorLib.color(new java.awt.Color(181,222,223)),
     //         ColorLib.color(new java.awt.Color(227,216,216)),

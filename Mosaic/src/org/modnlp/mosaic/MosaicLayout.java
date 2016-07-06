@@ -25,7 +25,9 @@ package org.modnlp.mosaic;
 import prefuse.action.layout.Layout;
 
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import prefuse.data.tuple.TupleSet;
 import prefuse.util.ColorLib;
@@ -72,12 +74,16 @@ public class MosaicLayout extends Layout {
         int previous_column=0;
         TupleSet ts = m_vis.getGroup(m_group);
         int m = rows, n = cols;
+        List<VisualItem> items_in_coulmn = new ArrayList<VisualItem>();
+        boolean isRelFreq =false;
        
         Iterator iter = ts.tuples();
         // layout grid contents
        
         for ( int i=0; iter.hasNext() && i < m*n; ++i ) {
             VisualItem item = (VisualItem)iter.next();
+            if(i==0)
+                isRelFreq= (Boolean)item.get("rel_freq");        
             if((Integer)item.get("column")==4){
                 //item.setFillColor(ColorLib.color(java.awt.Color.BLUE));
                 item.setEndFillColor(item.getFillColor());
@@ -86,7 +92,31 @@ public class MosaicLayout extends Layout {
             }
             
             if(previous_column<(Integer)item.get("column")){
+                if(!isRelFreq){
+                if(height_used<450){
+                    int totalToAdd=0;
+                    int itemNumber=0;
+                    int amountToAdd =1;
+                    while(height_used<450){
+                        VisualItem modify = items_in_coulmn.get(itemNumber);
+                        setY(modify,null,modify.getY()+(amountToAdd*itemNumber));
+                        modify.set("add1",amountToAdd);
+                        totalToAdd+=amountToAdd;
+                        itemNumber++;
+                        if(itemNumber>m){
+                            itemNumber=0;
+                            amountToAdd+=1;
+                        }
+                        height_used++;
+                    }
+                    for(int x=itemNumber;x<items_in_coulmn.size();x++){
+                        VisualItem modify = items_in_coulmn.get(x);
+                        setY(modify,null,modify.getY()+(totalToAdd));
+                    }
+                }
+                }
                 height_used=0;
+                items_in_coulmn = new ArrayList<VisualItem>();
             }
             
             item.setVisible(true);
@@ -98,15 +128,42 @@ public class MosaicLayout extends Layout {
            
             setX(item,null,x);
             setY(item,null,y);
-            height_used +=  Math.round((450 )* ((Double) item.get("frequency")));
+            height_used +=  Math.floor((450 )* ((Double) item.get("frequency")));
             previous_column=(Integer)item.get("column");
+            items_in_coulmn.add(item);
             
+        }
+        // for final column should change as we are repeating code
+        if(height_used<450){
+            if(!isRelFreq){
+                    int totalToAdd=0;
+                    int itemNumber=0;
+                    int amountToAdd =1;
+                    while(height_used<450){
+                        VisualItem modify = items_in_coulmn.get(itemNumber);
+                        setY(modify,null,modify.getY()+(amountToAdd*itemNumber));
+                        modify.set("add1",amountToAdd);
+                        totalToAdd+=amountToAdd;
+                        itemNumber++;
+                        if(itemNumber>m){
+                            itemNumber=0;
+                            amountToAdd+=1;
+                        }
+                        height_used++;
+                    }
+                    for(int x=itemNumber;x<items_in_coulmn.size();x++){
+                        VisualItem modify = items_in_coulmn.get(x);
+                        setY(modify,null,modify.getY()+(totalToAdd));
+                    }
+                }
         }
         // set left-overs invisible
         while ( iter.hasNext() ) {
             VisualItem item = (VisualItem)iter.next();
             item.setVisible(false);
         }
+        
+        //again to add back extra space
     }
     
    
