@@ -1,6 +1,6 @@
 (jde-project-file-version "1.0")
 (jde-set-variables
- '(jde-project-name "Mosaic")
+ '(jde-project-name "ConcTree")
  '(jde-db-option-application-args nil)
  '(jde-db-read-app-args t)
  '(jde-global-classpath (quote ("." "./../classes/" "../../../src/" "./../lib/teccli.jar" "./../lib/idx.jar" "./../lib/prefuse.jar" "./../lib/colt.jar" "../lib/je.jar"))) ;; "../../../src/")))

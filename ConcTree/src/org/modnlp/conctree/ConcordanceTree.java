@@ -159,6 +159,7 @@ public class ConcordanceTree extends Display
   public static final int WIDTH = 600;
   public static final int HEIGHT = 400;    
   public static final String NAME = "name";
+  public static final String ISVISIBLE = "isvisible?";
   public static final String NAMEEMPTY = "_Empty_Concordance_Tree_";
   public static final String NODECOUNT = "nodecount";
   public static final String ROWCOUNT = "colcount";
@@ -167,7 +168,7 @@ public class ConcordanceTree extends Display
   protected Tree tree;
   private LabelRenderer m_nodeRenderer;
   private EdgeRenderer m_edgeRenderer;
-  FisheyeTreeFilter fisheyetreefilter = new FisheyeTreeFilter(TREE, 6);
+  FisheyeTreeFilter fisheyetreefilter = new FisheyeTreeFilter(TREE, 9);
   private static Font defaultTreeFont = FontLib.getFont("Tahoma", 16);
   private Display m_display_self;  // myself
   
@@ -195,6 +196,7 @@ public class ConcordanceTree extends Display
     ntable.addColumn(NAME,String.class);
     ntable.addColumn(NODECOUNT, int.class);
     ntable.addColumn(ROWCOUNT,int.class);
+    ntable.addColumn(ISVISIBLE,boolean.class);
     resetTree();
 
     m_vis.add(TREE, tree);
@@ -213,12 +215,13 @@ public class ConcordanceTree extends Display
    // colors
    ItemAction nodeColor = new NodeColorAction(TREENODES);
    ItemAction textColor = new ColorAction(TREENODES,
-                                          VisualItem.TEXTCOLOR, ColorLib.rgb(0,0,0));
+                                          VisualItem.TEXTCOLOR,
+                                          ColorLib.rgb(0,0,0));
    m_vis.putAction("textColor", textColor);
    
    ItemAction edgeColor = new ColorAction(TREEEDGES,
-                                          VisualItem.STROKECOLOR, ColorLib.rgb(255,155,155));
-   
+                                          VisualItem.STROKECOLOR,
+                                          ColorLib.rgb(255,155,155));
 
    // quick repaint
    ActionList repaint = new ActionList();
@@ -271,17 +274,17 @@ public class ConcordanceTree extends Display
    filter.add(treeLayout);
    filter.add(subLayout);
    filter.add(textColor);
-   //filter.add(nodeColor);
+   filter.add(fisheyetreefilter);
    filter.add(edgeColor);
    m_vis.putAction("filter", filter);
 
    ActionList fishactlist = new ActionList(1000);
    fishactlist.add(fisheyetreefilter);
    fishactlist.setPacingFunction(new SlowInSlowOutPacer());
-   //fishactlist.add(new QualityControlAnimator());
-   //   fishactlist.add(new LocationAnimator(TREENODES));
-   // fishactlist.add(new RepaintAction());
-   //m_vis.putAction("fishactlist", fishactlist);
+   fishactlist.add(new QualityControlAnimator());
+   fishactlist.add(new LocationAnimator(TREENODES));
+   fishactlist.add(new RepaintAction());
+   m_vis.putAction("fishactlist", fishactlist);
 
    // This doesn't quite work as expected; the layout is calculated
    //for the entire tree and low freq nodes are simply not shown,
@@ -369,6 +372,9 @@ public class ConcordanceTree extends Display
     return tree;
   }
 
+  public void setTree(Tree t){
+    tree = t;
+  }
 
   public void resetTree(){
     tree.clear();
@@ -646,6 +652,7 @@ public class ConcordanceTree extends Display
       super(group,df);
     }
         
+    // TODO: come up with a better algorithm for scaling according to frequency
     public Font getFont(VisualItem item) {
       int nc = item.getInt(NODECOUNT);
       //if (nc==1)
@@ -714,8 +721,6 @@ public class ConcordanceTree extends Display
     
   }
 
-
-
  public static class WordSizeAction extends ItemAction {
         
     public WordSizeAction(String group){
@@ -733,32 +738,42 @@ public class ConcordanceTree extends Display
         PrefuseLib.updateVisible(tn,false);
         PrefuseLib.updateVisible(item,false);
       }
-
     }
-    
   }
 
   public static class WordCountPredicate extends prefuse.data.expression.AbstractPredicate
   {
-    
     public boolean getBoolean(Tuple t){
       if (t instanceof Node ){
-            System.err.println("==="+((Node)t).getInt(NODECOUNT));
-        if (((Node)t).getDepth() == 0 )
+        Node n = (Node)t;
+        Edge pe = n.getParentEdge();
+        if (n.getDepth() < 2 &&
+            n.canGetInt(NODECOUNT) &&
+            n.getInt(NODECOUNT) > cutoff_frequency){
+          n.setBoolean(ISVISIBLE,true);
+          System.err.println(n.getString(NAME)+"=="+n.getInt(NODECOUNT)+" (visible)");
           return true;
+        }
+        if (n.getDepth() >= 2 && pe.getSourceNode().getBoolean(ISVISIBLE)){
+          n.setBoolean(ISVISIBLE,true);
+          System.err.println(n.getString(NAME)+"=="+n.getInt(NODECOUNT)+" (visible)");
+          return true;
+        }
         else
-          return t.canGetInt(NODECOUNT) &&
-            ((Node)t).getInt(NODECOUNT) > cutoff_frequency;
+        {
+          n.setBoolean(ISVISIBLE,false);
+          System.err.println(n.getString(NAME)+"=="+n.getInt(NODECOUNT)+" (invisible)");
+          return false;
+        }
       }
-      if ( ((Edge)t).getSourceNode().getInt(
-NODECOUNT) <= cutoff_frequency )
-        return false;
-      if ( ((Edge)t).getTargetNode().getInt(NODECOUNT) <= cutoff_frequency )
-        return false;
-      return true;
+      else 
+        if ( ((Edge)t).getSourceNode().getInt(NODECOUNT) > cutoff_frequency ){
+          System.err.println("Edge from "+((Edge)t).getSourceNode().getString(NAME));
+          return true;
+        }
+      System.err.println(">>>"+t);
+      return false;
     }
-    
   }
-  
 }
 
