@@ -93,6 +93,7 @@ public class ConcordanceMosaic extends JFrame
   public static final int GROW = 1;
   public static final int PRUNE = 2;
   private boolean is_rel_freq = false;
+  private boolean is_pos_freq = false;
   private Graph graph = null;
   private JFrame thisFrame = null;
   private JProgressBar progressBar;
@@ -160,17 +161,22 @@ public class ConcordanceMosaic extends JFrame
             
         
     final JToggleButton frequencyButton = new JToggleButton("Column Word Frequency");
-    final JToggleButton relFrequencyButton = new JToggleButton("Column Collocation Strength");
-      
+    final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Within Window)");
+    final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Per Position)");
+    
+    
     JPanel pas = new JPanel();
        
     pas.add(frequencyButton);
     pas.add(relFrequencyButton);
+    pas.add(relFreqPosButton);
     frequencyButton.setSelected(true);
         
     frequencyButton.addActionListener(new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
           is_rel_freq = false;
+          is_pos_freq = false;
+          relFreqPosButton.setSelected(false);
           frequencyButton.setSelected(!is_rel_freq);
           relFrequencyButton.setSelected(is_rel_freq);
             
@@ -183,8 +189,24 @@ public class ConcordanceMosaic extends JFrame
           public void actionPerformed(java.awt.event.ActionEvent evt) {
             //stop();
             is_rel_freq = true;
+            is_pos_freq = false;
+            relFreqPosButton.setSelected(false);
             frequencyButton.setSelected(!is_rel_freq);
             relFrequencyButton.setSelected(is_rel_freq);
+            MakeMosaic();
+            //sort parent
+            //start();
+          }});
+    
+     relFreqPosButton.
+      addActionListener(new ActionListener() {
+          public void actionPerformed(java.awt.event.ActionEvent evt) {
+            //stop();
+            is_rel_freq = true;
+            is_pos_freq = true;
+            relFreqPosButton.setSelected(true);
+            frequencyButton.setSelected(false);
+            relFrequencyButton.setSelected(false);
             MakeMosaic();
             //sort parent
             //start();
@@ -487,8 +509,15 @@ public class ConcordanceMosaic extends JFrame
             n.set("word", column[x]);
             n.set("add1",0);
             if(is_rel_freq){
-                n.set("frequency", (Double) (Rel_freq_counter.get(column[x])));
-                n.set("rel_freq", true);
+                if(is_pos_freq){
+                    n.set("frequency", (Double) (Rel_freq_counter.get(column[x])/rel_column_length));
+                    n.set("rel_freq", false);
+                }
+                else{
+                   n.set("frequency", (Double) (Rel_freq_counter.get(column[x])));
+                   n.set("rel_freq", true);
+                }
+                
             }else{
                 n.set("frequency", (Double) (counter.get(column[x]) * 1.0) / nrows);
                 n.set("rel_freq", false);
@@ -515,7 +544,7 @@ public class ConcordanceMosaic extends JFrame
         }
 
 
-        if(is_rel_freq){
+        if(is_rel_freq && !is_pos_freq){
         // we need to scale each box relative to a max col heigth
             calculateRelFreqHeigths();
           }
