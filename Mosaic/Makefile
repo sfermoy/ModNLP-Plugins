@@ -7,7 +7,7 @@ JAVACFLAGS=-g -d classes -classpath $(CLASSPATH)
 JAVAC=javac
 
 class:
-	$(JAVAC) $(JAVACFLAGS) src/org/modnlp/mosaic/ConcordanceMosaic.java
+	$(JAVAC) $(JAVACFLAGS) src/org/modnlp/mosaic/*.java
 
 jar: class
 	java -jar ../autojar.jar -o $(TARGET_JAR) -vc classes:lib/prefuse.jar:lib/colt.jar:lib/je.jar -b  org/modnlp/mosaic/*.class
