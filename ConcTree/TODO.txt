@@ -1,0 +1,96 @@
+29-Jul-2016:
+
+Developments in prefuselike: 
+
+1) A collapsing branch function has been implemented. See
+   CollapsedSubtreeLayout and CollapsingBranchFilter. The latter
+   implements a mouse-click filter that activates a sub-tree layout
+   change: clicking on a word expands or collapses a node. This is a
+   useful to unfocus frequent but uninteresting words (e.g. 'the').
+
+2) PRUNNING is still unresolved: the purpose of this branch
+   (prefuselike) is to rewrite this code so that instead of starting
+   off with a pruned tree, we always keep the original (full) tree and
+   simply display the tree that results from the evaluation of certain
+   prefuse.visual.expression.Predicates to the tree at display
+   time. In other words, we want to do the pruning at the visual
+   level, as opposed to the data level, as is done below.  This is
+   what we call a prefuse-like way of handling different levels of
+   detail on the Concordance Tree.
+
+   In order to implement this we have created ExpansionFilter, which
+   gets all nodes to be filtered out and recurses down their subtrees,
+   marking all VisualItem's in them invisible. This is implemented in
+   ConcordanceTree.java:278:
+
+   ExpansionFilter visibfilter = new ExpansionFilter(TREENODES,new WordCountPredicate());
+
+   This indeed has the effect of rendering them invisible, but it
+   unfortunately it doesn't reformat the tree to use the space made
+   available by the invisible items, resulting in gaps. This could be
+   a bug in NodeLinkTreeLayout. We should investigate this next.
+
+   I have also attempted creating a new FocusCgroup (VTREE) and
+   setting the layout action to operate on this focus group instead of
+   the original TREE primary group (eg m_vis.addFocusGroup(VTREE,
+   vis_ts); and then new NodeLinkTreeLayout(VTREE,m_orientation, 4, 0,
+   0), where VTREE is ). This doesn't seem to work either, as the new
+   FocusGroup is a TupleSet, which cannot be cast as a Tree for
+   rendering by NodeLinkTreeLayout.
+
+19-Jul-2016:
+
+The version tagged as prefuselike controls excessive large trees by
+constraining the depth-1 to a certain (user-defined) width and further
+prunning low-frequency (single occurrence at present) items at level
+2. This works reasonably well except when the topology includes very
+wide level-2 trees which themselves contain fairly wide
+tries. 
+
+However, these constrains are currently implemented at the Node
+level (data level) by filtering Nodes out of the tree. A more
+prefuse-like way of doing this would be to do it at the VisualItem
+level (visualisation level) by marking the nodes be pruned
+out as 'non-visible' (PrefuseLib.updateVisible(Noditem, boolean)) and
+letting the visualisation actions (e.g. a visibility filter) take care
+of the rendering. My attempts to implement this so far have been
+frustrated by the fact that the prefuse tree rendering engine refuses
+to behave as documented. The strategy is: implement a filtering
+predicate (say WordCountPredicate) which will mark which nodes to hide
+or collapse and add it to the general visualisation filter. Th problem
+is the NodeLinkTreeLayout and CollapsedSubtreeLayout will layout the
+whole tree, leaving blank spaces for the invisible items, rather than
+collapsing the sister branches around them (as FisheyeTreeFilter
+causes them to do interactively).
+
+I have 'frozen' a working version that follows the unprefuse-like
+approach, which we can use on the version of the software to be made
+available through the genealogiesofknowledge.net site for the moment,
+and started a 'fork' for an eventual prefuse-like version.
+
+In git, a way to handle this type of branching is:
+
+  git tag unprefuselike # tag current master repository (working version)
+
+  git checkout -b prefuselike unprefuselike # fork a new branch off unprefuselike
+                                            # and check it out; all
+                                            #  development now on new branch
+
+If we need to return to the master (unprefuselike) branch (e.g. to
+make bug fixes etc) before merging prefuselike back into the main
+trunk, all we need to do is
+
+  git checkout master
+
+make the changes, and then go back to the branch
+
+  git checkout prefuselike
+
+This all takes place in your local git repo but can be pushed to
+gitlab etc as normal. 
+
+When we are ready to release prefuselike, we can then merge the branch
+back:
+
+  git merge prefuselike
+
