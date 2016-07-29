@@ -28,6 +28,7 @@ import java.awt.Font;
 import java.awt.Dimension;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Stroke;
 import java.awt.BasicStroke;
 import java.awt.event.FocusListener;
 import java.awt.event.FocusEvent;
@@ -118,6 +119,7 @@ import prefuse.data.Node;
 import prefuse.data.Table;
 import prefuse.data.Tree;
 import prefuse.data.Tuple;
+import prefuse.data.tuple.DefaultTupleSet;
 import prefuse.data.event.TupleSetListener;
 import prefuse.data.io.TreeMLReader;
 import prefuse.data.search.PrefixSearchTupleSet;
@@ -138,7 +140,7 @@ import prefuse.visual.NodeItem;
 import prefuse.visual.EdgeItem;
 import prefuse.visual.expression.InGroupPredicate;
 import prefuse.visual.sort.TreeDepthItemSorter;
-
+import prefuse.visual.expression.VisiblePredicate;
 
 /**
  *  Concordance tree display. Display a prefix tree (trie) encoding
@@ -154,6 +156,7 @@ import prefuse.visual.sort.TreeDepthItemSorter;
 public class ConcordanceTree extends Display
 {
   private static final String TREE = "tree";
+  private static final String VTREE = "visible.tree";
   private static final String TREENODES = "tree.nodes";
   private static final String TREEEDGES = "tree.edges";
   public static final int WIDTH = 600;
@@ -166,12 +169,13 @@ public class ConcordanceTree extends Display
   public static final int MAXCOLS = 200;
 
   protected Tree tree;
+  private Tree vis_ts;
+
   private LabelRenderer m_nodeRenderer;
   private EdgeRenderer m_edgeRenderer;
-  FisheyeTreeFilter fisheyetreefilter = new FisheyeTreeFilter(TREE, 9);
   private static Font defaultTreeFont = FontLib.getFont("Tahoma", 16);
-  private Display m_display_self;  // myself
-  
+
+  private Display m_display_self;  // myself  
   private String m_label = "label";
   private int m_orientation = Constants.ORIENT_LEFT_RIGHT;
   private static int cutoff_frequency = 1;
@@ -185,23 +189,37 @@ public class ConcordanceTree extends Display
    */
   private static float minFreqRatio = 1;
     
-  public ConcordanceTree() {
+  public ConcordanceTree(Tree t) {
     super(new Visualization());
 
     m_display_self = this;
     m_label = NAME;
 
-    tree = new Tree();
-    Table ntable = tree.getNodeTable();
-    ntable.addColumn(NAME,String.class);
-    ntable.addColumn(NODECOUNT, int.class);
-    ntable.addColumn(ROWCOUNT,int.class);
-    ntable.addColumn(ISVISIBLE,boolean.class);
-    resetTree();
+    tree = t;
+    //tree = new Tree();
+    //Table ntable = tree.getNodeTable();
+    //ntable.addColumn(NAME,String.class);
+    //ntable.addColumn(NODECOUNT, int.class);
+    //ntable.addColumn(ROWCOUNT,int.class);
+    //ntable.addColumn(ISVISIBLE,boolean.class);
+    //resetTree();
+    
+    //m_vis.addTree(TREE, tree, new VisiblePredicate());
+    //m_vis.addTree(TREE, tree, new WordCountPredicate());
+    m_vis.addTree(TREE, tree);
+    //vis_ts = copyTree();
+    // This approach doesn't seem to work; And even if it did, it
+    //wouldn't be very prefuse-like 
 
-    m_vis.add(TREE, tree);
-    //m_vis.add(TREE, t, new WordCountPredicate());
+    //m_vis.addFocusGroup(TREE, vis_ts);
+    //updateTreeVisibility(1);
 
+    // this 
+    //m_display_self.setPredicate(new WordCountPredicate());
+
+
+
+    
    m_nodeRenderer = new LabelRenderer(m_label);
    m_nodeRenderer.setRenderType(AbstractShapeRenderer.RENDER_TYPE_FILL);
    m_nodeRenderer.setHorizontalAlignment(Constants.LEFT);
@@ -221,32 +239,15 @@ public class ConcordanceTree extends Display
    
    ItemAction edgeColor = new ColorAction(TREEEDGES,
                                           VisualItem.STROKECOLOR,
-                                          ColorLib.rgb(255,155,155));
-
-   // quick repaint
-   ActionList repaint = new ActionList();
-   repaint.add(nodeColor);
-   //WordSizeAction wsaction = new WordSizeAction(TREEEDGES);
-   repaint.add(new RepaintAction());
-   m_vis.putAction("repaint", repaint);
-
-   // full paint
-   ActionList fullPaint = new ActionList();
-   fullPaint.add(nodeColor);
-   m_vis.putAction("fullPaint", fullPaint);
-   
-   // animate paint change
-   ActionList animatePaint = new ActionList(400);
-   animatePaint.add(new ColorAnimator(TREENODES));
-   animatePaint.add(new RepaintAction());
-   m_vis.putAction("animatePaint", animatePaint);
+                                          ColorLib.rgb(255,155,155)); 
    
    // create the tree layout action
-   NodeLinkTreeLayout treeLayout = new NodeLinkTreeLayout(TREE,m_orientation, 2, 0, 0);
+   NodeLinkTreeLayout treeLayout = new NodeLinkTreeLayout(TREE,m_orientation, 4, 0, 0);
 
    //Point2D anchor = new Point2D.Double(25,HEIGHT/2);
    //treeLayout.setLayoutAnchor(anchor);
    m_vis.putAction("treeLayout", treeLayout);
+   
    
    CollapsedSubtreeLayout subLayout = 
      new CollapsedSubtreeLayout(TREE, m_orientation);
@@ -261,37 +262,32 @@ public class ConcordanceTree extends Display
    m_vis.putAction("positioning", positioning);
 
    ActionList fna = new ActionList();
+   //fna.add(new VisibilityAction(TREENODES));
    fna.add(new WordFontAction(TREENODES, defaultTreeFont));
-   //   fna.add(new EdgeWidthAction(TREEEDGES));
-   //fna.add(new WordSizeAction(TREEEDGES));
+   fna.add(new EdgeWidthAction(TREEEDGES));
+   //fna
    m_vis.putAction("fontnodeaction", fna);
 
    // create the filtering and layout
    ActionList filter = new ActionList();
+   CollapsingBranchFilter collapsefilter = new CollapsingBranchFilter(TREE);
+
+   // this approach to pruning 'works' by setting the pruned items
+   // invisible; however, NodeLinkTreeLayout reserves space for the
+   // invisible items, leaving gaps in the tree :-(
+   ExpansionFilter visibfilter = new ExpansionFilter(TREENODES,new WordCountPredicate());
+   m_vis.putAction("collapse", collapsefilter);
+
+   //filter.add(new FisheyeTreeFilter(TREE, 5));
    filter.add(fna);
-   //VisibilityFilter visibfilter = new VisibilityFilter(new WordCountPredicate());
-   //filter.add(visibfilter);
+   filter.add(visibfilter);
+   filter.add(collapsefilter);
    filter.add(treeLayout);
    filter.add(subLayout);
    filter.add(textColor);
-   filter.add(fisheyetreefilter);
    filter.add(edgeColor);
    m_vis.putAction("filter", filter);
 
-   ActionList fishactlist = new ActionList(1000);
-   fishactlist.add(fisheyetreefilter);
-   fishactlist.setPacingFunction(new SlowInSlowOutPacer());
-   fishactlist.add(new QualityControlAnimator());
-   fishactlist.add(new LocationAnimator(TREENODES));
-   fishactlist.add(new RepaintAction());
-   m_vis.putAction("fishactlist", fishactlist);
-
-   // This doesn't quite work as expected; the layout is calculated
-   //for the entire tree and low freq nodes are simply not shown,
-   //leaving gaps in the layout
-   //
-   //setPredicate(new WordCountPredicate());
-   
    // animated transition
    ActionList animate = new ActionList(1000);
    animate.setPacingFunction(new SlowInSlowOutPacer());
@@ -308,7 +304,7 @@ public class ConcordanceTree extends Display
    ActionList orient = new ActionList(2000);
    orient.setPacingFunction(new SlowInSlowOutPacer());
    orient.add(autoPan);
-   orient.add(autocenter);
+   //orient.add(autocenter);
    orient.add(new QualityControlAnimator());
    orient.add(new LocationAnimator(TREENODES));
    orient.add(new RepaintAction());
@@ -325,7 +321,8 @@ public class ConcordanceTree extends Display
    addControlListener(new ZoomControl());
    addControlListener(new WheelZoomControl());
    addControlListener(new PanControl());
-   addControlListener(new FocusControl(1, "filter"));
+   // Mouse-click 1 to collapse
+   addControlListener(new CollapsingFocusControl(1, "filter"));
    addControlListener(new ToolTipControl(NODECOUNT));
 
    registerKeyboardAction(
@@ -340,32 +337,14 @@ public class ConcordanceTree extends Display
    registerKeyboardAction(
                           new OrientAction(Constants.ORIENT_BOTTOM_TOP),
                           "bottom-to-top", KeyStroke.getKeyStroke("ctrl 4"), WHEN_IN_FOCUSED_WINDOW);
-   registerKeyboardAction(
-                          new FisheyeExpandAction(-1),
-                          "collapse-one", KeyStroke.getKeyStroke("ctrl 5"), WHEN_IN_FOCUSED_WINDOW);
-   registerKeyboardAction(
-                          new FisheyeExpandAction(+1),
-                          "expand-one", KeyStroke.getKeyStroke("ctrl 6"), WHEN_IN_FOCUSED_WINDOW);
-
    
    // ------------------------------------------------
    
    // filter graph and perform layout
+   //m_vis.run("expansion");
    setOrientation(m_orientation);
    m_vis.run("filter");
 
-   /*
- TupleSet search = new PrefixSearchTupleSet(); 
-   m_vis.addFocusGroup(Visualization.SEARCH_ITEMS, search);
-   search.addTupleSetListener(new TupleSetListener() {
-       public void tupleSetChanged(TupleSet t, Tuple[] add, Tuple[] rem) {
-         m_vis.cancel("animatePaint");
-         m_vis.run("fullPaint");
-         m_vis.run("animatePaint");
-       }
-     });
-    */ 
-  
   }  
 
   public Tree getTree(){
@@ -382,6 +361,111 @@ public class ConcordanceTree extends Display
     cnode.setString(NAME,NAMEEMPTY);
     cnode.setInt(NODECOUNT,1);
     cnode.setInt(ROWCOUNT,1);
+  }
+
+  public void updateTreeVisibility(int t){
+    vis_ts = (Tree)m_vis.getFocusGroup(VTREE);
+    Node cnode = vis_ts.getRoot();
+    Node[] togo = new Node[cnode.getChildCount()];
+    int i = 0;
+    java.util.Arrays.fill(togo,null);
+    for (Iterator<Tuple> children = cnode.children(); children.hasNext();){
+      Tuple n = children.next();
+      int c = n.getInt(NODECOUNT);
+      if (c <= t){
+        //tree.removeChild(n);
+        System.err.println("removing "+n);
+        togo[i++] = (Node)n;
+      }
+    }
+    for (int k = 0; k < togo.length; k++){
+      if (togo[k] != null){
+        vis_ts.removeChild(togo[k]);
+      }
+    }
+  }
+
+  private void pruneVisibleSubtree(Node n, int t) {
+    Iterator children = n.children();
+    
+    for ( int i=0; children.hasNext(); ++i ) {
+       Node m = (Node)children.next();
+       int c = m.getInt(NODECOUNT);
+       if (c <= t){
+         vis_ts.removeChild(m);
+       }
+       else {
+         // here we should come up with a clever pruning heuristic
+         pruneVisibleSubtree(m, t-1);
+       }
+    }
+  }
+
+  public Tree copyTree(){
+    Tree t = new Tree();
+    Table ntable = t.getNodeTable();
+    ntable.addColumn(NAME,String.class);
+    ntable.addColumn(NODECOUNT, int.class);
+    ntable.addColumn(ROWCOUNT,int.class);
+    ntable.addColumn(ISVISIBLE,boolean.class);
+
+    Node q = tree.getRoot();
+    Node r = t.addRoot();
+    r.setString(NAME, q.getString(NAME));
+    r.setInt(NODECOUNT, q.getInt(NODECOUNT));
+    r.setInt(ROWCOUNT, q.getInt(ROWCOUNT));
+
+    for (Iterator<Node> children = q.children(); children.hasNext();){
+      Node n = children.next();
+      Node m = t.addChild(r);
+      m.setString(NAME, q.getString(NAME));
+      m.setInt(NODECOUNT, q.getInt(NODECOUNT));
+      m.setInt(ROWCOUNT, q.getInt(ROWCOUNT));
+      addDescentants(t, m);
+    }
+    return t;
+  }
+
+  private void addDescentants(Tree t, Node q){
+    for (Iterator<Node> children = q.children(); children.hasNext();){
+      Node n = children.next();
+      Node m = t.addChild(q);
+      m.setString(NAME, q.getString(NAME));
+      m.setInt(NODECOUNT, q.getInt(NODECOUNT));
+      m.setInt(ROWCOUNT, q.getInt(ROWCOUNT));
+      addDescentants(t, m);
+    }
+  }
+
+  private void updateDescendantsVisibility(Node n, boolean v) {
+    Edge e = n.getParentEdge();
+    n.setBoolean(ISVISIBLE, v);
+    //e.setBoolean(ISVISIBLE, false);
+    VisualItem ve = m_vis.getVisualItem(TREE,e);
+    VisualItem vn = m_vis.getVisualItem(TREE,n);
+    if (ve != null){
+      System.err.println("set edge "+ve+" to"+v);
+      PrefuseLib.updateVisible(ve, v);
+      updateVisTupleSet(ve, v);
+    }
+    if (vn != null){
+      System.err.println("set node "+vn+" to"+v);
+      PrefuseLib.updateVisible(vn, v);
+      updateVisTupleSet(vn, v);
+    }
+    Iterator children = n.children();
+    
+    for ( int i=0; children.hasNext(); ++i ) {
+      updateDescendantsVisibility((Node)children.next(), v);
+    }
+  }
+
+  private void updateVisTupleSet(VisualItem i, boolean v){
+    boolean c = vis_ts.containsTuple(i);
+    if (v && !c )
+      vis_ts.addTuple(i);
+    else if (!v && c )
+      vis_ts.removeTuple(i);
   }
 
   public void initialView(){
@@ -414,6 +498,8 @@ public class ConcordanceTree extends Display
 
   // set orientation of layout
   public void setOrientation(int orientation) {
+    //if (true)
+    //  return;
     NodeLinkTreeLayout rtl 
       = (NodeLinkTreeLayout)m_vis.getAction("treeLayout");
     CollapsedSubtreeLayout stl
@@ -459,7 +545,7 @@ public class ConcordanceTree extends Display
     rtl.setOrientation(orientation);
     rtl.setLayoutAnchor(anchor);
     stl.setOrientation(orientation);
-
+    //m_vis.run("positioning");
   }
     
   public int getOrientation() {
@@ -502,22 +588,6 @@ public class ConcordanceTree extends Display
     this.rowCount = rc;
   }
 
-  // Inner classes (actions etc)
-  public class FisheyeExpandAction extends AbstractAction {
-    private int expand;
-    
-    public FisheyeExpandAction(int b) {
-      this.expand = b;
-    }
-    public void actionPerformed(ActionEvent evt) {
-      fisheyetreefilter.setDistance(fisheyetreefilter.getDistance()+expand);
-      getVisualization().cancel("fishactlist");
-      getVisualization().run("fishactlist");
-      getVisualization().run("treeLayout");
-      System.err.println(fisheyetreefilter.getDistance());
-    }
-  }
-
   public class OrientAction extends AbstractAction {
     private int orientation;
     
@@ -534,8 +604,6 @@ public class ConcordanceTree extends Display
       //getVisualization().run("orient");
     }
   }
-    
-
 
   public class AutoPanAction extends Action {
     private Point2D m_start = new Point2D.Double();
@@ -648,6 +716,10 @@ public class ConcordanceTree extends Display
 
   public static class WordFontAction extends FontAction {
     
+    public WordFontAction(){
+      super();
+    }
+
     public WordFontAction(String group, Font df){
       super(group,df);
     }
@@ -655,17 +727,15 @@ public class ConcordanceTree extends Display
     // TODO: come up with a better algorithm for scaling according to frequency
     public Font getFont(VisualItem item) {
       int nc = item.getInt(NODECOUNT);
-      //if (nc==1)
-      //  return defaultTreeFont;
-
-      //int cc = item.getInt(ROWCOUNT);
-
-      //float smin = 1f/cc;
       
       float s = (float)nc/rowCount;
       float fs = defaultTreeFont.getSize();
-      if (s > 1)
+      //if (nc == 1)
+      //  fs = 0;
+      //else
+        if (s > 1)
         fs = fs*2f;
+      else
       if (s > minFreqRatio*60)
         fs = fs*3f;
       else
@@ -706,35 +776,44 @@ public class ConcordanceTree extends Display
 
   public static class EdgeWidthAction extends StrokeAction {
     
+    public EdgeWidthAction() {
+      super();
+      defaultStroke = new BasicStroke(0.4f); //this.getDefaultStroke();
+
+    } 
     public EdgeWidthAction(String group) {
       super(group);
-      defaultStroke = this.getDefaultStroke();
+      defaultStroke = new BasicStroke(0.4f); //this.getDefaultStroke();
     } 
     
     public BasicStroke getStroke(VisualItem item) {
       Node tn = ((Edge)item).getTargetNode();
       int nc = tn.getInt(NODECOUNT);
-      if (nc==1)
-        return new BasicStroke(0f);
+      if (nc==1){
+        //System.err.println("hiding edge"+item);
+        //PrefuseLib.updateVisible(item,false);
+        return new BasicStroke(0.1f);
+      }
       return defaultStroke;
     }
     
   }
 
- public static class WordSizeAction extends ItemAction {
-        
-    public WordSizeAction(String group){
+ public static class VisibilityAction extends ItemAction {
+
+    public VisibilityAction(String group){
       super(group);
     }
         
    public void process(VisualItem item, double frac) {
-      //if (item instanceof Node ){
-        //int dp = item.getDepth()+1;
-        //double incfactor = 
-      NodeItem tn = ((EdgeItem)item).getTargetItem();
+     NodeItem tn = ((EdgeItem)item).getTargetItem();
       int nc = tn.getInt(NODECOUNT);
       if (nc == 1){
-        System.err.println("hiding___"+item);
+        System.err.println("hidineg___"+item);
+        //TupleSet ts = vis.getFocusGroup(m_group);
+        //if (ts.containsTuple(item)){
+        //  ts.removeTuple(item);
+        //}
         PrefuseLib.updateVisible(tn,false);
         PrefuseLib.updateVisible(item,false);
       }
@@ -743,37 +822,22 @@ public class ConcordanceTree extends Display
 
   public static class WordCountPredicate extends prefuse.data.expression.AbstractPredicate
   {
+
     public boolean getBoolean(Tuple t){
-      if (t instanceof Node ){
-        Node n = (Node)t;
-        Edge pe = n.getParentEdge();
-        if (n.getDepth() < 2 &&
-            n.canGetInt(NODECOUNT) &&
-            n.getInt(NODECOUNT) > cutoff_frequency){
-          n.setBoolean(ISVISIBLE,true);
-          System.err.println(n.getString(NAME)+"=="+n.getInt(NODECOUNT)+" (visible)");
-          return true;
-        }
-        if (n.getDepth() >= 2 && pe.getSourceNode().getBoolean(ISVISIBLE)){
-          n.setBoolean(ISVISIBLE,true);
-          System.err.println(n.getString(NAME)+"=="+n.getInt(NODECOUNT)+" (visible)");
-          return true;
-        }
-        else
-        {
-          n.setBoolean(ISVISIBLE,false);
-          System.err.println(n.getString(NAME)+"=="+n.getInt(NODECOUNT)+" (invisible)");
-          return false;
-        }
+      //System.err.println(" testing___"+t+t.getClass()+" N? "+t.canGetInt(NODECOUNT));
+      
+      //if (true )
+      //  return true;
+      //System.err.println(" visual item ");
+      Node n = (Node)t;
+      //Edge pe = n.getParentEdge();
+      if (n.getDepth() == 1 && n.getInt(NODECOUNT) < 2){
+        return false;
       }
-      else 
-        if ( ((Edge)t).getSourceNode().getInt(NODECOUNT) > cutoff_frequency ){
-          System.err.println("Edge from "+((Edge)t).getSourceNode().getString(NAME));
-          return true;
-        }
-      System.err.println(">>>"+t);
-      return false;
-    }
+      else {
+        return true;
+      }
+    }    
   }
 }
 

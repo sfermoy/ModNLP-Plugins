@@ -206,7 +206,6 @@ public class ConcordanceTreeViewer extends JFrame
     pas.add(dismissButton);
     pas.add(cop);
 
-
     growTreeButton.setEnabled(true);
     
     progressBar = new JProgressBar(0,800);
@@ -228,7 +227,7 @@ public class ConcordanceTreeViewer extends JFrame
 
 
     // set visualisation display    
-    setDisplay(new ConcordanceTree(),1);
+    //setDisplay(new ConcordanceTree(),1);
 
 
     getContentPane().add(pas, BorderLayout.NORTH);
@@ -299,8 +298,9 @@ public class ConcordanceTreeViewer extends JFrame
 
   public synchronized void growTree() {
     try{
-      setDisplay(new ConcordanceTree(),1);
-      //tree = null;
+
+      //setDisplay(new ConcordanceTree(),1);
+      Tree ctree = null;
       boolean inittree = true;
 
       if (parent != null){
@@ -351,20 +351,25 @@ public class ConcordanceTreeViewer extends JFrame
         // initialise (keyword/root node)
         if (inittree){
           inittree = false;
-          conc_tree.resetTree();
-          conc_tree.setRowCount(nrows);
-          conc_tree.setMinFreqRatio(1f/nrows);
-          //tree = conc_tree.getTree();
-          cnode = conc_tree.tree.getRoot();
+          ctree = new Tree();
+          Table ntable = ctree.getNodeTable();
+          ntable.addColumn(ConcordanceTree.NAME,String.class);
+          ntable.addColumn(ConcordanceTree.NODECOUNT, int.class);
+          ntable.addColumn(ConcordanceTree.ROWCOUNT,int.class);
+          ntable.addColumn(ConcordanceTree.ISVISIBLE,boolean.class);
+ 
+          //conc_tree.resetTree();
+          //conc_tree.setRowCount(nrows);
+          cnode = ctree.addRoot();
           cnode.setString(ConcordanceTree.NAME,ctoken);
           cnode.setInt(ConcordanceTree.NODECOUNT, 1);
-          System.err.println("root = "+cnode+" "+cnode);
+          //System.err.println("root = "+cnode+" "+cnode);
           cnode.setInt(ConcordanceTree.ROWCOUNT, nrows);
           //colcounts[0]++;
         }
         else {
           // update root node frequencies
-          cnode = conc_tree.tree.getRoot();
+          cnode = ctree.getRoot();
           cnode.setInt(ConcordanceTree.NODECOUNT, cnode.getInt(ConcordanceTree.NODECOUNT)+1);
         }
         // update trie by reading string from left to right 
@@ -390,7 +395,7 @@ public class ConcordanceTreeViewer extends JFrame
           if (found)
             continue;
           // couldn't find a matching child; make one
-          Node n = conc_tree.tree.addChild(cnode);
+          Node n = ctree.addChild(cnode);
           n.setString(ConcordanceTree.NAME,ctoken);
           n.setInt(ConcordanceTree.NODECOUNT, 1);
           n.setInt(ConcordanceTree.ROWCOUNT, nrows);
@@ -400,8 +405,41 @@ public class ConcordanceTreeViewer extends JFrame
       } // end update trie for whole concordance
       progressBar.setString("Done");      
 
+      /*
+        NOTE ON PRUNNING: the purpose of this branch (prefuselike) is
+        to rewrite this code so that instead of starting off with a
+        pruned tree, we always keep the original (full) tree and
+        simply display the tree that results from the evaluation of
+        certain prefuse.visual.expression.Predicates to the tree at
+        display time. In other words, we want to do the pruning at the
+        visual level, as opposed to the data level, as is done below.
+        This is what we call a prefuse-like way of handling different
+        levels of detail on the Concordance Tree. 
+
+        In order to implement this we have created ExpansionFilter,
+        which gets all nodes to be filtered out and recurses down
+        their subtrees, marking all VisualItem's in them
+        invisible. This is implemented in ConcordanceTree.java:278:
+
+        ExpansionFilter visibfilter = new ExpansionFilter(TREENODES,new WordCountPredicate());
+
+        This indeed has the effect of rendering them
+        invisible, but it unfortunately it doesn't reformat the tree
+        to use the space made available by the invisible items,
+        resulting in gaps. This could be a bug in
+        NodeLinkTreeLayout. We should investigate this next.
+
+        I have also attempted creating a new FocusCgroup (VTREE) and
+        setting the layout action to operate on this focus group
+        instead of the original TREE primary group (eg
+        m_vis.addFocusGroup(VTREE, vis_ts); and then new
+        NodeLinkTreeLayout(VTREE,m_orientation, 4, 0, 0), where VTREE
+        is ). This doesn't seem to work either, as the new FocusGroup
+        is a TupleSet, which cannot be cast as a Tree for rendering by
+        NodeLinkTreeLayout.
+       */
       // now prune at the kw+1 level
-      Node cnode = conc_tree.tree.getRoot();
+      Node cnode = ctree.getRoot();
       Node[] togo = new Node[cnode.getChildCount()];
       Node[] tokeep = new Node[cnode.getChildCount()];
       Arrays.fill(togo,null);
@@ -420,7 +458,7 @@ public class ConcordanceTreeViewer extends JFrame
         Tuple n = children.next();
         int c = n.getInt(ConcordanceTree.NODECOUNT);
         
-        System.err.println("pruning "+n+" count = "+n.getInt(ConcordanceTree.NODECOUNT));
+        //System.err.println("pruning "+n+" count = "+n.getInt(ConcordanceTree.NODECOUNT));
         //if (!(n instanceof Node) )
         //  continue;
         if (c > 20)
@@ -438,12 +476,14 @@ public class ConcordanceTreeViewer extends JFrame
         nr = nr+hist[h];
         if (nr > max_nd1daughters && cutoff == 0)
           cutoff = h+1;
-        System.err.println(h+"="+hist[h]+" cutoff="+cutoff+", nr="+nr);
+        //System.err.println(h+"="+hist[h]+" cutoff="+cutoff+", nr="+nr);
       }
-      System.err.println("nr="+nr+", prune_cutoff="+cutoff);
+      //System.err.println("nr="+nr+", prune_cutoff="+cutoff);
 
       int ndaughters = cnode.getDegree();
       int ngranddaughters = 0;
+
+      // We must try to set visibility at the visual representation level instead
       for (Iterator<Tuple> children = cnode.children(); children.hasNext();){
         Node n = (Node)children.next();
         //System.err.println("testing = "+n+" ct ="+n.getInt(ConcordanceTree.NODECOUNT));
@@ -453,21 +493,21 @@ public class ConcordanceTreeViewer extends JFrame
           ndaughters--;
           nrows = nrows-n.getChildCount();
           //nrows = nrows-(int)prune_cutoff;
-          System.err.println("marking for removal = "+n+" ct ="+n.getInt(ConcordanceTree.NODECOUNT)+" ndaughters="+ndaughters);
+          //System.err.println("marking for removal = "+n+" ct ="+n.getInt(ConcordanceTree.NODECOUNT)+" ndaughters="+ndaughters);
         }
         else {
           n.setBoolean(ConcordanceTree.ISVISIBLE,true);
           tokeep[j++] = n;
           ngranddaughters = ngranddaughters+n.getChildCount();
-        }
+        } 
       }
-      for (int k = 0; k < togo.length; k++){
+
+      /*      for (int k = 0; k < togo.length; k++){
         if (togo[k] != null){
-          //System.err.println("removing = "+togo[k]);
-          conc_tree.tree.removeChild(togo[k]);
-          //prefuse.util.PrefuseLib.updateVisible((prefuse.visual.Node)togo[k], false);
-        }
-        if ( ngranddaughters > (max_nd1daughters/3)*max_nd1daughters && tokeep[k] != null) {
+          System.err.println("removing = "+togo[k]);
+          ctree.removeChild(togo[k]);
+        }*/
+/*        if ( ngranddaughters > (max_nd1daughters/3)*max_nd1daughters && tokeep[k] != null) {
           int keep = (int)Math.ceil(tokeep[k].getChildCount()/1.5);
           Node[] togo2 = new Node[tokeep[k].getChildCount()];
           Arrays.fill(togo2,null);
@@ -486,13 +526,16 @@ public class ConcordanceTreeViewer extends JFrame
               System.err.println("removing layer-2 = "+togo2[m]);
               conc_tree.tree.removeChild(togo2[m]);
             }}
-        }
-      }
+        }      
+        
+        }*/
 
+
+      setDisplay(new ConcordanceTree(ctree),1);
       conc_tree.setRowCount(nrows);
       conc_tree.setMinFreqRatio(1f/nrows);
 
-      System.err.println("rc="+nrows);        
+      System.err.println("rc="+nrows);
       
       //cnode = conc_tree.tree.getRoot();
       //for (Iterator<Node> children = cnode.children(); children.hasNext();){
