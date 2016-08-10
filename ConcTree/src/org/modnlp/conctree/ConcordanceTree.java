@@ -196,16 +196,13 @@ public class ConcordanceTree extends Display
     m_label = NAME;
 
     tree = t;
-    //tree = new Tree();
-    //Table ntable = tree.getNodeTable();
-    //ntable.addColumn(NAME,String.class);
-    //ntable.addColumn(NODECOUNT, int.class);
-    //ntable.addColumn(ROWCOUNT,int.class);
-    //ntable.addColumn(ISVISIBLE,boolean.class);
+    
     //resetTree();
     
     //m_vis.addTree(TREE, tree, new VisiblePredicate());
     //m_vis.addTree(TREE, tree, new WordCountPredicate());
+
+    System.err.println("TREE: "+tree);
     m_vis.addTree(TREE, tree);
     //vis_ts = copyTree();
     // This approach doesn't seem to work; And even if it did, it
@@ -216,9 +213,6 @@ public class ConcordanceTree extends Display
 
     // this 
     //m_display_self.setPredicate(new WordCountPredicate());
-
-
-
     
    m_nodeRenderer = new LabelRenderer(m_label);
    m_nodeRenderer.setRenderType(AbstractShapeRenderer.RENDER_TYPE_FILL);
@@ -275,12 +269,12 @@ public class ConcordanceTree extends Display
    // this approach to pruning 'works' by setting the pruned items
    // invisible; however, NodeLinkTreeLayout reserves space for the
    // invisible items, leaving gaps in the tree :-(
-   ExpansionFilter visibfilter = new ExpansionFilter(TREENODES,new WordCountPredicate());
+   //ExpansionFilter visibfilter = new ExpansionFilter(TREENODES,new WordCountPredicate());
    m_vis.putAction("collapse", collapsefilter);
 
    //filter.add(new FisheyeTreeFilter(TREE, 5));
    filter.add(fna);
-   filter.add(visibfilter);
+   //filter.add(visibfilter);
    filter.add(collapsefilter);
    filter.add(treeLayout);
    filter.add(subLayout);

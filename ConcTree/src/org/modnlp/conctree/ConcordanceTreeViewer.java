@@ -299,7 +299,8 @@ public class ConcordanceTreeViewer extends JFrame
   public synchronized void growTree() {
     try{
 
-      //setDisplay(new ConcordanceTree(),1);
+      //
+      
       Tree ctree = null;
       boolean inittree = true;
 
@@ -358,7 +359,7 @@ public class ConcordanceTreeViewer extends JFrame
           ntable.addColumn(ConcordanceTree.ROWCOUNT,int.class);
           ntable.addColumn(ConcordanceTree.ISVISIBLE,boolean.class);
  
-          //conc_tree.resetTree();
+          //ctree.clear();
           //conc_tree.setRowCount(nrows);
           cnode = ctree.addRoot();
           cnode.setString(ConcordanceTree.NAME,ctoken);
@@ -366,6 +367,7 @@ public class ConcordanceTreeViewer extends JFrame
           //System.err.println("root = "+cnode+" "+cnode);
           cnode.setInt(ConcordanceTree.ROWCOUNT, nrows);
           //colcounts[0]++;
+          setDisplay(new ConcordanceTree(ctree),1);
         }
         else {
           // update root node frequencies
@@ -495,18 +497,19 @@ public class ConcordanceTreeViewer extends JFrame
           //nrows = nrows-(int)prune_cutoff;
           //System.err.println("marking for removal = "+n+" ct ="+n.getInt(ConcordanceTree.NODECOUNT)+" ndaughters="+ndaughters);
         }
-        else {
-          n.setBoolean(ConcordanceTree.ISVISIBLE,true);
-          tokeep[j++] = n;
-          ngranddaughters = ngranddaughters+n.getChildCount();
-        } 
+        //        else {
+        //  n.setBoolean(ConcordanceTree.ISVISIBLE,true);
+        //  tokeep[j++] = n;
+        //  ngranddaughters = ngranddaughters+n.getChildCount();
+        //} 
       }
 
-      /*      for (int k = 0; k < togo.length; k++){
+      for (int k = 0; k < togo.length; k++){
         if (togo[k] != null){
-          System.err.println("removing = "+togo[k]);
+          //System.err.println("removing = "+togo[k]);
           ctree.removeChild(togo[k]);
-        }*/
+        }
+      }
 /*        if ( ngranddaughters > (max_nd1daughters/3)*max_nd1daughters && tokeep[k] != null) {
           int keep = (int)Math.ceil(tokeep[k].getChildCount()/1.5);
           Node[] togo2 = new Node[tokeep[k].getChildCount()];
@@ -530,12 +533,12 @@ public class ConcordanceTreeViewer extends JFrame
         
         }*/
 
+      System.err.println("rc="+nrows);
 
-      setDisplay(new ConcordanceTree(ctree),1);
+      //setDisplay(new ConcordanceTree(ctree),1);
       conc_tree.setRowCount(nrows);
       conc_tree.setMinFreqRatio(1f/nrows);
 
-      System.err.println("rc="+nrows);
       
       //cnode = conc_tree.tree.getRoot();
       //for (Iterator<Node> children = cnode.children(); children.hasNext();){
