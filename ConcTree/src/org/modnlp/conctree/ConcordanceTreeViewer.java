@@ -67,6 +67,11 @@ import prefuse.util.ui.JFastLabel;
 import prefuse.util.FontLib;
 import prefuse.visual.VisualItem;
 import java.io.IOException;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.JSlider;
+import javax.swing.Timer;
+import java.util.Hashtable;
 
 /**
  *  Basic concordance tree generator. A concordance tree is a prefix
@@ -84,18 +89,23 @@ public class ConcordanceTreeViewer extends JFrame
 {
   
   //String tknregexp  = "\\{L}[\\p{L}-.]*'?s?";
+  Tree tmptree = null;
 
   public static final int GROW = 1;
   public static final int PRUNE = 2;
 
   private int current_action = GROW;
-  private int max_nd1daughters = 20;
+  private double max_nd1daughters = 20;
   final JTextField max_nd1daughters_field = new JTextField(""+max_nd1daughters, 4);
-  
+  int nrows = 0;
+  int total_nrows = 0;
+  final JSlider max_pctn1daughters_slider = new JSlider(JSlider.HORIZONTAL, 0,100,50);
+
   // prune_cutoff deprecated 
   private double prune_cutoff = 1;
 
   private boolean case_sensitive = false;
+  private boolean tree_changed = true;
   /**
    * Describe left_context here.
    */
@@ -103,8 +113,6 @@ public class ConcordanceTreeViewer extends JFrame
 
   private Thread thread;
   private JFrame thisFrame = null;
-  //private Tree tree = null;
-
 
   JLabel statsLabel = new JLabel("                            ");
   SubcorpusCaseStatusPanel sccsPanel = new SubcorpusCaseStatusPanel(null);
@@ -118,9 +126,10 @@ public class ConcordanceTreeViewer extends JFrame
 
   private ConcordanceTree conc_tree =  null;
 
-  private static String title = new String("MODNLP Plugin: ConcordanceTreeViewer 0.1"); 
+  private static String title = new String("MODNLP Plugin: ConcordanceTreeViewer 0.3"); 
   private ConcordanceBrowser parent = null;
   private boolean guiLayoutDone = false;
+  int max_pctn1daughters = 50;
 
   public ConcordanceTreeViewer() {
     thisFrame = this;
@@ -157,6 +166,8 @@ public class ConcordanceTreeViewer extends JFrame
     ActionListener gtal = new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
           stop();
+          if (left_context)
+            tree_changed = true;
           setLeftContext(false);
           current_action = GROW;
           start();
@@ -167,6 +178,8 @@ public class ConcordanceTreeViewer extends JFrame
     growTreeLeftButton.
       addActionListener(new ActionListener() {
           public void actionPerformed(java.awt.event.ActionEvent evt) {
+            if (!left_context)
+              tree_changed = true;
             setLeftContext(true);
             current_action = GROW;
             stop(); start();
@@ -176,7 +189,13 @@ public class ConcordanceTreeViewer extends JFrame
     cop.setBorder(javax.swing.BorderFactory.createEtchedBorder());
     JLabel pruneTreeButton = new JLabel("Depth-1 width");
     cop.add(pruneTreeButton);
-    cop.add(max_nd1daughters_field);
+    //cop.add(max_nd1daughters_field);
+    Hashtable lt = new Hashtable();
+    lt.put( new Integer( 1 ), new JLabel("1%") );
+    lt.put( new Integer( 100 ), new JLabel("100%") );
+    max_pctn1daughters_slider.setLabelTable( lt );
+    max_pctn1daughters_slider.setPaintLabels(true);
+    cop.add(max_pctn1daughters_slider);
 
     uldButton.addActionListener(new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -192,12 +211,23 @@ public class ConcordanceTreeViewer extends JFrame
                     new Upload(file);
                   ulf.readConcordances();
                   concVector = ulf.getConcordanceVector();
+                  tree_changed = true;
                 }
             }
           catch (java.io.IOException e){
             alertWindow("Error downloading concordances\n!"+e);
           }}}
       );
+
+ 
+    max_pctn1daughters_slider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (!max_pctn1daughters_slider.getValueIsAdjusting()) {
+            max_pctn1daughters = (int)max_pctn1daughters_slider.getValue();
+            growTree();
+          }
+        }});
+
 
     JPanel pas = new JPanel();
     pas.add(uldButton);
@@ -297,19 +327,181 @@ public class ConcordanceTreeViewer extends JFrame
   }
 
   public synchronized void growTree() {
-    try{
-
-      //
-      
-      Tree ctree = null;
-      boolean inittree = true;
-
+    try{   
       if (parent != null){
         concVector = parent.getConcordanceVector();
         sccsPanel.updateStatus();
         language = parent.getLanguage();
       }
 
+      if (tree_changed){
+        buildTreeFromConcordances();
+      }
+ 
+      // now prune at the kw+1 level
+      Node cnode = tmptree.getRoot();
+      Node[] togo = new Node[cnode.getChildCount()];
+      Node[] tokeep = new Node[cnode.getChildCount()];
+      Arrays.fill(togo,null);
+      Arrays.fill(tokeep,null);
+      int i = 0; int j =0;
+
+      // hist store distribution of 20 least frequent children nodes (hist[0-19]) 
+      // plus the frequency of the remaining nodes together hist[20]
+      int[] hist = new int[21];
+      Arrays.fill(hist,0);
+
+      
+      // create a 'histogram' of depth-1 word counts
+      for (Iterator<Tuple> children = cnode.children(); children.hasNext();){
+        Tuple n = children.next();
+        int c = n.getInt(ConcordanceTree.NODECOUNT);
+        
+        //System.err.println("pruning "+n+" count = "+n.getInt(ConcordanceTree.NODECOUNT));
+        //if (!(n instanceof Node) )
+        //  continue;
+        if (c > 20)
+          hist[20]++;
+        else
+          hist[c-1]++;
+      }
+
+      // find 'cutoff point' (i.e. the number of occurrences below which a node is removed) 
+          int dg = cnode.getDegree();
+      System.err.println(" deg="+dg+" tree_changed="+tree_changed);
+      if (tree_changed){
+        if (dg > 20 )
+          max_nd1daughters = dg * max_pctn1daughters/100;
+        else {
+          max_nd1daughters = dg;
+          max_pctn1daughters_slider.setValue(100);
+          // new Integer(max_nd1daughters_field.getText()).intValue();
+        }
+        tree_changed = false;
+      }
+      else
+        max_nd1daughters = dg * max_pctn1daughters/100;
+
+      int nr = 0;
+      int cutoff = 0;
+      for (int h = 20; h >= 0 ; h--) {
+        nr = nr+hist[h];
+        if (nr > max_nd1daughters && cutoff == 0)
+          cutoff = h+1;
+        //System.err.println(h+"="+hist[h]+" cutoff="+cutoff+", nr="+nr);
+      }
+      //System.err.println("nr="+nr+", prune_cutoff="+cutoff);
+
+      int ndaughters = cnode.getDegree();
+      int ngranddaughters = 0;
+
+      int nrows = total_nrows;
+      for (Iterator<Tuple> children = cnode.children(); children.hasNext();){
+        Node n = (Node)children.next();
+        //System.err.println("testing = "+n+" ct ="+n.getInt(ConcordanceTree.NODECOUNT));
+        if (n.getInt(ConcordanceTree.NODECOUNT) <= cutoff && ndaughters > max_nd1daughters){
+          n.setBoolean(ConcordanceTree.ISVISIBLE,false);
+          togo[i++] = n;
+          ndaughters--;
+          nrows = nrows-n.getChildCount();
+          //nrows = nrows-(int)prune_cutoff;
+          //System.err.println("marking for removal = "+n+" ct ="+n.getInt(ConcordanceTree.NODECOUNT)+" ndaughters="+ndaughters);
+        }
+        else {
+          n.setBoolean(ConcordanceTree.ISVISIBLE,true);
+          tokeep[j++] = n;
+          ngranddaughters = ngranddaughters+n.getChildCount();
+        } 
+      }
+
+      System.err.println("rc="+nrows);
+
+      Tree tree = getVisibleTree(tmptree);
+      //setDisplay(new ConcordanceTree(tmptree),1);
+      setDisplay(new ConcordanceTree(tree),1);      
+      conc_tree.setRowCount(nrows);
+      conc_tree.setMinFreqRatio(1f/nrows);      
+      
+      if (isLeftContext())
+        conc_tree.setOrientation(Constants.ORIENT_RIGHT_LEFT);
+      else
+        conc_tree.setOrientation(Constants.ORIENT_LEFT_RIGHT);
+      conc_tree.initialView();
+      
+      //setDisplay(ct, nrows);
+        
+    } // end try
+    catch (Exception ex) {
+      ex.printStackTrace(System.err);
+      JOptionPane.showMessageDialog(null, "Error creating concordance tree" + ex,
+                                    "Error!", JOptionPane.ERROR_MESSAGE);
+    }
+  }
+
+
+  public Tree getVisibleTree(Tree s){
+
+    Tree t = new Tree();
+    Table ntable = t.getNodeTable();
+    ntable.addColumn(ConcordanceTree.NAME,String.class);
+    ntable.addColumn(ConcordanceTree.NODECOUNT, int.class);
+    ntable.addColumn(ConcordanceTree.ROWCOUNT,int.class);
+    ntable.addColumn(ConcordanceTree.ISVISIBLE,boolean.class);
+    Node q = s.getRoot();
+    Node r = t.addRoot();
+
+    r.setString(ConcordanceTree.NAME, q.getString(ConcordanceTree.NAME));
+    r.setInt(ConcordanceTree.NODECOUNT, q.getInt(ConcordanceTree.NODECOUNT) );
+    r.setInt(ConcordanceTree.ROWCOUNT, q.getInt(ConcordanceTree.ROWCOUNT) );
+    r.setBoolean(ConcordanceTree.ISVISIBLE, q.getBoolean(ConcordanceTree.ISVISIBLE) );
+    
+    for (Iterator<Node> children = q.children(); children.hasNext();){
+      Node m = children.next();
+      if (! m.getBoolean(ConcordanceTree.ISVISIBLE))
+        continue;
+      Node n = t.addChild(r);
+      n.setString(ConcordanceTree.NAME, m.getString(ConcordanceTree.NAME));
+      n.setInt(ConcordanceTree.NODECOUNT, m.getInt(ConcordanceTree.NODECOUNT) );
+      n.setInt(ConcordanceTree.ROWCOUNT, m.getInt(ConcordanceTree.ROWCOUNT) );
+      n.setBoolean(ConcordanceTree.ISVISIBLE, m.getBoolean(ConcordanceTree.ISVISIBLE) );
+      addDescentants(t, m, n);
+    }
+    return t;
+  }
+
+  private void addDescentants(Tree t, Node q, Node r){
+    for (Iterator<Node> children = q.children(); children.hasNext();){
+      Node m = children.next();
+      if (! m.getBoolean(ConcordanceTree.ISVISIBLE))
+        continue;
+      Node n = t.addChild(r);
+      n.setString(ConcordanceTree.NAME, m.getString(ConcordanceTree.NAME));
+      n.setInt(ConcordanceTree.NODECOUNT, m.getInt(ConcordanceTree.NODECOUNT) );
+      n.setInt(ConcordanceTree.ROWCOUNT, m.getInt(ConcordanceTree.ROWCOUNT) );
+      n.setBoolean(ConcordanceTree.ISVISIBLE, m.getBoolean(ConcordanceTree.ISVISIBLE) );
+      addDescentants(t, m, n);
+    }
+  }
+
+
+
+  private Tree updateColCounts(Tree tree, int[] c) {
+    for (Iterator<Tuple> spant = tree.tuples(); spant.hasNext();) {
+      Tuple n = spant.next();
+
+      if (!(n instanceof Node) )
+        continue;
+
+      int d = ((Node)n).getDepth();
+      ((Node)n).setInt(ConcordanceTree.ROWCOUNT, c[d]);
+      //System.err.println(new String(ch)+"c++ = "+n.getString(NAME)+" ct="+cnode.getInt(NODECOUNT));
+    }
+    return tree;
+  }
+
+
+  public void buildTreeFromConcordances(){
+    boolean inittree = true;
       Vector columns = new Vector();
       Tokeniser ss;
       switch (language) {
@@ -326,8 +518,8 @@ public class ConcordanceTreeViewer extends JFrame
       
       int ct = 0;
       progressBar.setString("Growing tree...");
-      int nrows = concVector.size();
-      progressBar.setMaximum(nrows);
+      total_nrows = concVector.size();
+      progressBar.setMaximum(total_nrows);
       progressBar.setValue(ct++);
       for (Iterator<ConcordanceObject> p = concVector.iterator(); p.hasNext();){
         ConcordanceObject co = p.next();
@@ -352,26 +544,26 @@ public class ConcordanceTreeViewer extends JFrame
         // initialise (keyword/root node)
         if (inittree){
           inittree = false;
-          ctree = new Tree();
-          Table ntable = ctree.getNodeTable();
+          tmptree = new Tree();
+          Table ntable = tmptree.getNodeTable();
           ntable.addColumn(ConcordanceTree.NAME,String.class);
           ntable.addColumn(ConcordanceTree.NODECOUNT, int.class);
           ntable.addColumn(ConcordanceTree.ROWCOUNT,int.class);
           ntable.addColumn(ConcordanceTree.ISVISIBLE,boolean.class);
  
-          //ctree.clear();
+          //tmptree.clear();
           //conc_tree.setRowCount(nrows);
-          cnode = ctree.addRoot();
+          cnode = tmptree.addRoot();
           cnode.setString(ConcordanceTree.NAME,ctoken);
           cnode.setInt(ConcordanceTree.NODECOUNT, 1);
           //System.err.println("root = "+cnode+" "+cnode);
-          cnode.setInt(ConcordanceTree.ROWCOUNT, nrows);
+          cnode.setInt(ConcordanceTree.ROWCOUNT, total_nrows);
+          cnode.setBoolean(ConcordanceTree.ISVISIBLE,true);
           //colcounts[0]++;
-          setDisplay(new ConcordanceTree(ctree),1);
         }
         else {
           // update root node frequencies
-          cnode = ctree.getRoot();
+          cnode = tmptree.getRoot();
           cnode.setInt(ConcordanceTree.NODECOUNT, cnode.getInt(ConcordanceTree.NODECOUNT)+1);
         }
         // update trie by reading string from left to right 
@@ -397,187 +589,17 @@ public class ConcordanceTreeViewer extends JFrame
           if (found)
             continue;
           // couldn't find a matching child; make one
-          Node n = ctree.addChild(cnode);
+          Node n = tmptree.addChild(cnode);
           n.setString(ConcordanceTree.NAME,ctoken);
           n.setInt(ConcordanceTree.NODECOUNT, 1);
-          n.setInt(ConcordanceTree.ROWCOUNT, nrows);
-          //Edge e = tree.addChildEdge(cnode,n);
+          n.setInt(ConcordanceTree.ROWCOUNT, total_nrows);
+          n.setBoolean(ConcordanceTree.ISVISIBLE,true);
           cnode = n;
-        } // end updtate trie for words to the right of kw
+        } // end updtate tree for words to the right/left of kw
       } // end update trie for whole concordance
-      progressBar.setString("Done");      
+      progressBar.setString("Done");
 
-      /*
-        NOTE ON PRUNNING: the purpose of this branch (prefuselike) is
-        to rewrite this code so that instead of starting off with a
-        pruned tree, we always keep the original (full) tree and
-        simply display the tree that results from the evaluation of
-        certain prefuse.visual.expression.Predicates to the tree at
-        display time. In other words, we want to do the pruning at the
-        visual level, as opposed to the data level, as is done below.
-        This is what we call a prefuse-like way of handling different
-        levels of detail on the Concordance Tree. 
-
-        In order to implement this we have created ExpansionFilter,
-        which gets all nodes to be filtered out and recurses down
-        their subtrees, marking all VisualItem's in them
-        invisible. This is implemented in ConcordanceTree.java:278:
-
-        ExpansionFilter visibfilter = new ExpansionFilter(TREENODES,new WordCountPredicate());
-
-        This indeed has the effect of rendering them
-        invisible, but it unfortunately it doesn't reformat the tree
-        to use the space made available by the invisible items,
-        resulting in gaps. This could be a bug in
-        NodeLinkTreeLayout. We should investigate this next.
-
-        I have also attempted creating a new FocusCgroup (VTREE) and
-        setting the layout action to operate on this focus group
-        instead of the original TREE primary group (eg
-        m_vis.addFocusGroup(VTREE, vis_ts); and then new
-        NodeLinkTreeLayout(VTREE,m_orientation, 4, 0, 0), where VTREE
-        is ). This doesn't seem to work either, as the new FocusGroup
-        is a TupleSet, which cannot be cast as a Tree for rendering by
-        NodeLinkTreeLayout.
-       */
-      // now prune at the kw+1 level
-      Node cnode = ctree.getRoot();
-      Node[] togo = new Node[cnode.getChildCount()];
-      Node[] tokeep = new Node[cnode.getChildCount()];
-      Arrays.fill(togo,null);
-      Arrays.fill(tokeep,null);
-      int i = 0; int j =0;
-
-
-      // hist store distribution of 20 least frequent children nodes (hist[0-19]) 
-      // plus the frequency of the remaining nodes together hist[20]
-      int[] hist = new int[21];
-      Arrays.fill(hist,0);
-
-      
-      // create a 'histogram' of depth-1 word counts
-      for (Iterator<Tuple> children = cnode.children(); children.hasNext();){
-        Tuple n = children.next();
-        int c = n.getInt(ConcordanceTree.NODECOUNT);
-        
-        //System.err.println("pruning "+n+" count = "+n.getInt(ConcordanceTree.NODECOUNT));
-        //if (!(n instanceof Node) )
-        //  continue;
-        if (c > 20)
-          hist[20]++;
-        else
-          hist[c-1]++;
-      }
-
-      // find 'cutoff point' (i.e. the number of occurrences below which a node is removed) 
-      max_nd1daughters = new Integer(max_nd1daughters_field.getText()).intValue();
-
-      int nr = 0;
-      int cutoff = 0;
-      for (int h = 20; h >= 0 ; h--) {
-        nr = nr+hist[h];
-        if (nr > max_nd1daughters && cutoff == 0)
-          cutoff = h+1;
-        //System.err.println(h+"="+hist[h]+" cutoff="+cutoff+", nr="+nr);
-      }
-      //System.err.println("nr="+nr+", prune_cutoff="+cutoff);
-
-      int ndaughters = cnode.getDegree();
-      int ngranddaughters = 0;
-
-      // We must try to set visibility at the visual representation level instead
-      for (Iterator<Tuple> children = cnode.children(); children.hasNext();){
-        Node n = (Node)children.next();
-        //System.err.println("testing = "+n+" ct ="+n.getInt(ConcordanceTree.NODECOUNT));
-        if (n.getInt(ConcordanceTree.NODECOUNT) <= cutoff && ndaughters > max_nd1daughters){
-          n.setBoolean(ConcordanceTree.ISVISIBLE,false);
-          togo[i++] = n;
-          ndaughters--;
-          nrows = nrows-n.getChildCount();
-          //nrows = nrows-(int)prune_cutoff;
-          //System.err.println("marking for removal = "+n+" ct ="+n.getInt(ConcordanceTree.NODECOUNT)+" ndaughters="+ndaughters);
-        }
-        //        else {
-        //  n.setBoolean(ConcordanceTree.ISVISIBLE,true);
-        //  tokeep[j++] = n;
-        //  ngranddaughters = ngranddaughters+n.getChildCount();
-        //} 
-      }
-
-      for (int k = 0; k < togo.length; k++){
-        if (togo[k] != null){
-          //System.err.println("removing = "+togo[k]);
-          ctree.removeChild(togo[k]);
-        }
-      }
-/*        if ( ngranddaughters > (max_nd1daughters/3)*max_nd1daughters && tokeep[k] != null) {
-          int keep = (int)Math.ceil(tokeep[k].getChildCount()/1.5);
-          Node[] togo2 = new Node[tokeep[k].getChildCount()];
-          Arrays.fill(togo2,null);
-          int l = 0;
-          for (Iterator<Node> children = tokeep[k].children(); children.hasNext();){
-            Node n = children.next();
-            if (n.getInt(ConcordanceTree.NODECOUNT) < 2 && keep-- > 0) {
-              System.err.println("removing = "+n);
-              togo2[l++] = n;
-              nrows = nrows-n.getChildCount();
-              //conc_tree.tree.removeChild(n);
-            }}
-          System.err.println("============removing layer-2 children of -"+tokeep[k]);
-          for (int m = 0; m < togo2.length ; m++) {
-            if (togo2[m] != null){
-              System.err.println("removing layer-2 = "+togo2[m]);
-              conc_tree.tree.removeChild(togo2[m]);
-            }}
-        }      
-        
-        }*/
-
-      System.err.println("rc="+nrows);
-
-      //setDisplay(new ConcordanceTree(ctree),1);
-      conc_tree.setRowCount(nrows);
-      conc_tree.setMinFreqRatio(1f/nrows);
-
-      
-      //cnode = conc_tree.tree.getRoot();
-      //for (Iterator<Node> children = cnode.children(); children.hasNext();){
-      //  Node n = children.next();
-      //  System.err.println("node="+n);//n.setInt(ConcordanceTree.ROWCOUNT, nrows);
-      //}
-      
-      
-      if (isLeftContext())
-        conc_tree.setOrientation(Constants.ORIENT_RIGHT_LEFT);
-      else
-        conc_tree.setOrientation(Constants.ORIENT_LEFT_RIGHT);
-      conc_tree.initialView();
-      
-      //setDisplay(ct, nrows);
-        
-    } // end try
-    catch (Exception ex) {
-      ex.printStackTrace(System.err);
-      JOptionPane.showMessageDialog(null, "Error creating concordance tree" + ex,
-                                    "Error!", JOptionPane.ERROR_MESSAGE);
-    }
   }
-
-
-  private Tree updateColCounts(Tree tree, int[] c) {
-    for (Iterator<Tuple> spant = tree.tuples(); spant.hasNext();) {
-      Tuple n = spant.next();
-
-      if (!(n instanceof Node) )
-        continue;
-
-      int d = ((Node)n).getDepth();
-      ((Node)n).setInt(ConcordanceTree.ROWCOUNT, c[d]);
-      //System.err.println(new String(ch)+"c++ = "+n.getString(NAME)+" ct="+cnode.getInt(NODECOUNT));
-    }
-    return tree;
-  }
-
 
   // placeholder for something future
   private Tree getPrunedTree(Tree tree) {
