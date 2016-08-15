@@ -146,8 +146,8 @@ public class ConcordanceTreeViewer extends JFrame
   public void activate() {
     if (guiLayoutDone){
       setVisible(true);
-      if (parent != null)
-        growTree(); 
+      //if (parent != null)
+      //  growTree(); 
       return;
     }
 
@@ -269,9 +269,9 @@ public class ConcordanceTreeViewer extends JFrame
     guiLayoutDone = true;
     if (parent != null){
       // delay 'pressing' of the grow tree button to avoid thread starvation
-      javax.swing.Timer tmr = new javax.swing.Timer(1000, gtal); 
-      tmr.setRepeats(false); 
-      tmr.start();
+      //javax.swing.Timer tmr = new javax.swing.Timer(1000, gtal); 
+      //tmr.setRepeats(false); 
+      //tmr.start();
     }
   }
 
