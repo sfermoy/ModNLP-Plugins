@@ -168,7 +168,7 @@ public class ConcordanceTree extends Display
   protected Tree tree;
   private LabelRenderer m_nodeRenderer;
   private EdgeRenderer m_edgeRenderer;
-  //FisheyeTreeFilter fisheyetreefilter = new FisheyeTreeFilter(TREE, 9);
+  FisheyeTreeFilter fisheyetreefilter = new FisheyeTreeFilter(TREE, 9);
   private static Font defaultTreeFont = FontLib.getFont("Tahoma", 16);
   private Display m_display_self;  // myself
   
@@ -199,7 +199,6 @@ public class ConcordanceTree extends Display
     ntable.addColumn(ISVISIBLE,boolean.class);
     resetTree();
 
-    synchronized (this){
     m_vis.add(TREE, tree);
     //m_vis.add(TREE, t, new WordCountPredicate());
 
@@ -243,7 +242,7 @@ public class ConcordanceTree extends Display
    m_vis.putAction("animatePaint", animatePaint);
    
    // create the tree layout action
-   NodeLinkTreeLayout treeLayout = new NodeLinkTreeLayout(TREE,m_orientation, 4, 0, 0);
+   NodeLinkTreeLayout treeLayout = new NodeLinkTreeLayout(TREE,m_orientation, 2, 0, 0);
 
    //Point2D anchor = new Point2D.Double(25,HEIGHT/2);
    //treeLayout.setLayoutAnchor(anchor);
@@ -269,20 +268,23 @@ public class ConcordanceTree extends Display
 
    // create the filtering and layout
    ActionList filter = new ActionList();
-   // allow user to control subtree visibility (collapsed or expanded) by clicking on nodes)
-   CollapsingBranchFilter collapsefilter = new CollapsingBranchFilter(TREE);
-   m_vis.putAction("collapse", collapsefilter);
-
-
    filter.add(fna);
    //VisibilityFilter visibfilter = new VisibilityFilter(new WordCountPredicate());
    //filter.add(visibfilter);
-   filter.add(collapsefilter);
    filter.add(treeLayout);
    filter.add(subLayout);
    filter.add(textColor);
+   filter.add(fisheyetreefilter);
    filter.add(edgeColor);
    m_vis.putAction("filter", filter);
+
+   ActionList fishactlist = new ActionList(1000);
+   fishactlist.add(fisheyetreefilter);
+   fishactlist.setPacingFunction(new SlowInSlowOutPacer());
+   fishactlist.add(new QualityControlAnimator());
+   fishactlist.add(new LocationAnimator(TREENODES));
+   fishactlist.add(new RepaintAction());
+   m_vis.putAction("fishactlist", fishactlist);
 
    // This doesn't quite work as expected; the layout is calculated
    //for the entire tree and low freq nodes are simply not shown,
@@ -323,8 +325,7 @@ public class ConcordanceTree extends Display
    addControlListener(new ZoomControl());
    addControlListener(new WheelZoomControl());
    addControlListener(new PanControl());
-   //addControlListener(new FocusControl(1, "filter"));
-   addControlListener(new CollapsingFocusControl(1, "filter"));
+   addControlListener(new FocusControl(1, "filter"));
    addControlListener(new ToolTipControl(NODECOUNT));
 
    registerKeyboardAction(
@@ -339,6 +340,13 @@ public class ConcordanceTree extends Display
    registerKeyboardAction(
                           new OrientAction(Constants.ORIENT_BOTTOM_TOP),
                           "bottom-to-top", KeyStroke.getKeyStroke("ctrl 4"), WHEN_IN_FOCUSED_WINDOW);
+   registerKeyboardAction(
+                          new FisheyeExpandAction(-1),
+                          "collapse-one", KeyStroke.getKeyStroke("ctrl 5"), WHEN_IN_FOCUSED_WINDOW);
+   registerKeyboardAction(
+                          new FisheyeExpandAction(+1),
+                          "expand-one", KeyStroke.getKeyStroke("ctrl 6"), WHEN_IN_FOCUSED_WINDOW);
+
    
    // ------------------------------------------------
    
@@ -357,7 +365,7 @@ public class ConcordanceTree extends Display
        }
      });
     */ 
-    }  
+  
   }  
 
   public Tree getTree(){
@@ -495,6 +503,21 @@ public class ConcordanceTree extends Display
   }
 
   // Inner classes (actions etc)
+  public class FisheyeExpandAction extends AbstractAction {
+    private int expand;
+    
+    public FisheyeExpandAction(int b) {
+      this.expand = b;
+    }
+    public void actionPerformed(ActionEvent evt) {
+      fisheyetreefilter.setDistance(fisheyetreefilter.getDistance()+expand);
+      getVisualization().cancel("fishactlist");
+      getVisualization().run("fishactlist");
+      getVisualization().run("treeLayout");
+      System.err.println(fisheyetreefilter.getDistance());
+    }
+  }
+
   public class OrientAction extends AbstractAction {
     private int orientation;
     
