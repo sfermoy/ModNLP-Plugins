@@ -1,3 +1,21 @@
+18-Aug-2016:
+
+Prefuse's doesn't correctly hide invisible nodes in
+NodeLinkTreeLayout; it leaves the spaces blank. We should try to fix
+the relevant prefuse visual classes in future.
+
+In the meantime, we will settle for an approach that uses two Trees,
+an independent Tree built out of the Concordance object, which is kept
+until a new request is made, and another Tree tied to the
+visualisation. When pruning is activated, the original Tree is copied
+into the visual Tree, leaving the nodex to be pruned off out of the
+latter. Synchronization issues prevent using a single Tree, but the
+implemented approach of using a backup Tree saves us having to
+re-tokenise and rebuild each time.
+
+Mergin back into the master branch.
+
+
 29-Jul-2016:
 
 Developments in prefuselike: 
