@@ -1,3 +1,61 @@
+18-Aug-2016:
+
+Prefuse's doesn't correctly hide invisible nodes in
+NodeLinkTreeLayout; it leaves the spaces blank. We should try to fix
+the relevant prefuse visual classes in future.
+
+In the meantime, we will settle for an approach that uses two Trees,
+an independent Tree built out of the Concordance object, which is kept
+until a new request is made, and another Tree tied to the
+visualisation. When pruning is activated, the original Tree is copied
+into the visual Tree, leaving the nodex to be pruned off out of the
+latter. Synchronization issues prevent using a single Tree, but the
+implemented approach of using a backup Tree saves us having to
+re-tokenise and rebuild each time.
+
+Mergin back into the master branch.
+
+
+29-Jul-2016:
+
+Developments in prefuselike: 
+
+1) A collapsing branch function has been implemented. See
+   CollapsedSubtreeLayout and CollapsingBranchFilter. The latter
+   implements a mouse-click filter that activates a sub-tree layout
+   change: clicking on a word expands or collapses a node. This is a
+   useful to unfocus frequent but uninteresting words (e.g. 'the').
+
+2) PRUNNING is still unresolved: the purpose of this branch
+   (prefuselike) is to rewrite this code so that instead of starting
+   off with a pruned tree, we always keep the original (full) tree and
+   simply display the tree that results from the evaluation of certain
+   prefuse.visual.expression.Predicates to the tree at display
+   time. In other words, we want to do the pruning at the visual
+   level, as opposed to the data level, as is done below.  This is
+   what we call a prefuse-like way of handling different levels of
+   detail on the Concordance Tree.
+
+   In order to implement this we have created ExpansionFilter, which
+   gets all nodes to be filtered out and recurses down their subtrees,
+   marking all VisualItem's in them invisible. This is implemented in
+   ConcordanceTree.java:278:
+
+   ExpansionFilter visibfilter = new ExpansionFilter(TREENODES,new WordCountPredicate());
+
+   This indeed has the effect of rendering them invisible, but it
+   unfortunately it doesn't reformat the tree to use the space made
+   available by the invisible items, resulting in gaps. This could be
+   a bug in NodeLinkTreeLayout. We should investigate this next.
+
+   I have also attempted creating a new FocusCgroup (VTREE) and
+   setting the layout action to operate on this focus group instead of
+   the original TREE primary group (eg m_vis.addFocusGroup(VTREE,
+   vis_ts); and then new NodeLinkTreeLayout(VTREE,m_orientation, 4, 0,
+   0), where VTREE is ). This doesn't seem to work either, as the new
+   FocusGroup is a TupleSet, which cannot be cast as a Tree for
+   rendering by NodeLinkTreeLayout.
+
 19-Jul-2016:
 
 The version tagged as prefuselike controls excessive large trees by

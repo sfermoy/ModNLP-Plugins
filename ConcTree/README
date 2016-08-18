@@ -1,2 +1,5 @@
 Concordance Tree plugin. Maybe use autojar package to pack the
 prefuse libraries into the plugin distribution. 
+
+See TODO.txt for current developments, and instructions on how to
+swtich branches on GIT.
