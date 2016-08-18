@@ -75,7 +75,7 @@ import java.util.Hashtable;
 
 /**
  *  Basic concordance tree generator. A concordance tree is a prefix
- *  tree (trie) encoding the context to the right of a concordance; or a
+ *  tree encoding the context to the right of a concordance; or a
  *  (i.e. a right-to-left prefix tree) encoding the left
  *  context of a concordance
  *
@@ -123,7 +123,6 @@ public class ConcordanceTreeViewer extends JFrame
 
   JPanel tpanel = new JPanel(new BorderLayout());
 
-
   private ConcordanceTree conc_tree =  null;
 
   private static String title = new String("MODNLP Plugin: ConcordanceTreeViewer 0.3"); 
@@ -150,7 +149,6 @@ public class ConcordanceTreeViewer extends JFrame
       //  growTree(); 
       return;
     }
-
     JButton dismissButton = new JButton("Quit");
     JButton growTreeButton = new JButton("Grow tree ->");
     JButton growTreeLeftButton = new JButton("<- Grow tree");
@@ -259,7 +257,7 @@ public class ConcordanceTreeViewer extends JFrame
     // set visualisation display    
     //setDisplay(new ConcordanceTree(),1);
 
-
+    setDisplay(new ConcordanceTree(new Tree()), 1);
     getContentPane().add(pas, BorderLayout.NORTH);
     getContentPane().add(tpanel, BorderLayout.CENTER);
     getContentPane().add(pabottom, BorderLayout.SOUTH);
@@ -613,7 +611,7 @@ public class ConcordanceTreeViewer extends JFrame
       ct.setOrientation(Constants.ORIENT_RIGHT_LEFT);
     ct.setDefaultTreeFont(FontLib.getFont("Tahoma", Font.PLAIN, 10));
     tpanel.removeAll();
-    ct.setSize(tpanel.getSize());
+    ct.setSize(ConcordanceTree.WIDTH, ConcordanceTree.HEIGHT);//tpanel.getSize());
     ct.setBackground(Color.WHITE);
     ct.setForeground(Color.BLACK);
     tpanel.add(ct, BorderLayout.CENTER);

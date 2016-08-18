@@ -93,6 +93,7 @@ public class ConcordanceMosaic extends JFrame
   public static final int GROW = 1;
   public static final int PRUNE = 2;
   private boolean is_rel_freq = false;
+  private boolean is_pos_freq = false;
   private Graph graph = null;
   private JFrame thisFrame = null;
   private JProgressBar progressBar;
@@ -116,6 +117,9 @@ public class ConcordanceMosaic extends JFrame
   private Dictionary d =null;
   private BufferedReader input1;
   private BufferedReader input2;
+  private ArrayList columnWordsBatchRequest;
+  
+  private int total_no_tokens;
 
   public List<Double> columnHeigths = new ArrayList<Double>();
 
@@ -160,17 +164,22 @@ public class ConcordanceMosaic extends JFrame
             
         
     final JToggleButton frequencyButton = new JToggleButton("Column Word Frequency");
-    final JToggleButton relFrequencyButton = new JToggleButton("Column Collocation Strength");
-      
+    final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Within Window)");
+    final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Per Position)");
+    
+    
     JPanel pas = new JPanel();
        
     pas.add(frequencyButton);
     pas.add(relFrequencyButton);
+    pas.add(relFreqPosButton);
     frequencyButton.setSelected(true);
         
     frequencyButton.addActionListener(new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
           is_rel_freq = false;
+          is_pos_freq = false;
+          relFreqPosButton.setSelected(false);
           frequencyButton.setSelected(!is_rel_freq);
           relFrequencyButton.setSelected(is_rel_freq);
             
@@ -183,8 +192,24 @@ public class ConcordanceMosaic extends JFrame
           public void actionPerformed(java.awt.event.ActionEvent evt) {
             //stop();
             is_rel_freq = true;
+            is_pos_freq = false;
+            relFreqPosButton.setSelected(false);
             frequencyButton.setSelected(!is_rel_freq);
             relFrequencyButton.setSelected(is_rel_freq);
+            MakeMosaic();
+            //sort parent
+            //start();
+          }});
+    
+     relFreqPosButton.
+      addActionListener(new ActionListener() {
+          public void actionPerformed(java.awt.event.ActionEvent evt) {
+            //stop();
+            is_rel_freq = true;
+            is_pos_freq = true;
+            relFreqPosButton.setSelected(true);
+            frequencyButton.setSelected(false);
+            relFrequencyButton.setSelected(false);
             MakeMosaic();
             //sort parent
             //start();
@@ -218,7 +243,7 @@ public class ConcordanceMosaic extends JFrame
       {
         System.err.println("Exception: couldn't create stream socket"+e);
       }
-    getTotalNoTokens();
+    total_no_tokens = getTotalNoTokens();
     MakeMosaic();
   }
     
@@ -298,6 +323,54 @@ public class ConcordanceMosaic extends JFrame
       }
     return result;
   }
+  
+  private String getbatchNoOfTokens(String[] column){
+    String result="";
+         
+    try {
+                
+                
+        clRequest.setServerURL("http://"+parent.getRemoteServer());
+        clRequest.setServerPORT(parent.getRemotePort());
+        clRequest.put("request","columnbatch");
+        clRequest.put("column",mergeStrings(column));
+        //clRequest.put("keyword","");
+        if (parent.isSubCorpusSelectionON())
+          clRequest.put("xquerywhere",parent.getXQueryWhere());
+        clRequest.put("casesensitive",parent.isCaseSensitive()?"TRUE":"FALSE");
+        clRequest.setServerProgramPath("/columnbatch");
+        URL exturl = new URL(clRequest.toString());
+        exturlConnection = (HttpURLConnection) exturl.openConnection();
+        //exturlConnection.setUseCaches(false);
+        exturlConnection.setRequestMethod("GET");
+        input2 = new
+          BufferedReader(new
+                         InputStreamReader(exturlConnection.getInputStream() ));
+        result = input2.readLine();      
+        exturlConnection.disconnect();
+    }
+    catch(IOException e)
+      {
+        System.err.println("Exception: couldn't create stream socket"+e);
+      }
+    return result;
+  }
+
+private static final String STRING_SEPARATOR = "@|$|@";
+private static final String STRING_SEPARATOR_REGEX = "@\\|\\$\\|@";
+
+private String mergeStrings(String[] ss) {
+    StringBuilder sb = new StringBuilder();
+    for(String s : ss) {
+        sb.append(s);
+        sb.append(STRING_SEPARATOR);
+    }
+    return sb.toString();
+}
+
+private String[] unmergeStrings(String s) {
+    return s.split(STRING_SEPARATOR_REGEX);
+}
 
   public void MakeMosaic() {
     if(!parent.isReceivingFromServer() ){
@@ -431,19 +504,30 @@ public class ConcordanceMosaic extends JFrame
 
 
           column = list1.toArray(new String[list1.size()]);
+          
+          String[] colFrequencies = new String[column.length];
+          //map for batch request
+          if (!parent.isStandAlone()) {
+             
+             colFrequencies = unmergeStrings(getbatchNoOfTokens(column));
 
+          }
 
           //calculate the corpus frequencies of the words in the coulmn
           for (int x = 0; x < column.length; x++) {
-
-
-            int corpus_word_count = getNoOfTokens(column[x]);
+            int corpus_word_count=1;
+            if (parent.isStandAlone()) {
+                corpus_word_count = getNoOfTokens(column[x]);
+            }
+            else {
+                corpus_word_count = Integer.parseInt(colFrequencies[x]);
+            }
             // Set infrequent words to a very small value
             if (counter.get(column[x])<2) {
               Rel_freq_counter.put(column[x], 0.0000000001);
             }
             else{
-              double temp=(( ((counter.get(column[x])*10.0) /nrows) / ( ((corpus_word_count*10.0)/getTotalNoTokens()) ) ));
+              double temp=(( ((counter.get(column[x])*10.0) /nrows) / ( ((corpus_word_count*10.0)/total_no_tokens) ) ));
               if (temp<10000000.0) {
                 Rel_freq_counter.put(column[x], temp);
               } else {
@@ -487,8 +571,15 @@ public class ConcordanceMosaic extends JFrame
             n.set("word", column[x]);
             n.set("add1",0);
             if(is_rel_freq){
-                n.set("frequency", (Double) (Rel_freq_counter.get(column[x])));
-                n.set("rel_freq", true);
+                if(is_pos_freq){
+                    n.set("frequency", (Double) (Rel_freq_counter.get(column[x])/rel_column_length));
+                    n.set("rel_freq", false);
+                }
+                else{
+                   n.set("frequency", (Double) (Rel_freq_counter.get(column[x])));
+                   n.set("rel_freq", true);
+                }
+                
             }else{
                 n.set("frequency", (Double) (counter.get(column[x]) * 1.0) / nrows);
                 n.set("rel_freq", false);
@@ -515,7 +606,7 @@ public class ConcordanceMosaic extends JFrame
         }
 
 
-        if(is_rel_freq){
+        if(is_rel_freq && !is_pos_freq){
         // we need to scale each box relative to a max col heigth
             calculateRelFreqHeigths();
           }
@@ -557,8 +648,7 @@ public class ConcordanceMosaic extends JFrame
          columnHeigths.set(4, 0.0);
          double maxH = Collections.max(columnHeigths);
                             
-         System.out.println(maxH);
-         System.out.println(columnHeigths);
+         
          for ( Iterator iter = graph.nodes(); iter.hasNext();){
              Node item = (Node)iter.next();
              String word = (String)item.get("word");

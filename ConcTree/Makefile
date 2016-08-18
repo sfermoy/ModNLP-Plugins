@@ -8,7 +8,7 @@ JAVACFLAGS=-g -d classes -classpath $(CLASSPATH)
 JAVAC=javac
 
 class:
-	$(JAVAC) $(JAVACFLAGS) src/org/modnlp/conctree/ConcordanceTreeViewer.java
+	$(JAVAC) $(JAVACFLAGS) src/org/modnlp/conctree/*.java
 
 jar: class
 	java -jar ../autojar.jar -o $(TARGET_JAR) -vc classes:lib/prefuse.jar:lib/colt.jar:lib/je.jar -b  org/modnlp/conctree/*.class

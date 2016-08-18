@@ -159,8 +159,8 @@ public class ConcordanceTree extends Display
   private static final String VTREE = "visible.tree";
   private static final String TREENODES = "tree.nodes";
   private static final String TREEEDGES = "tree.edges";
-  public static final int WIDTH = 600;
-  public static final int HEIGHT = 400;    
+  public static final int WIDTH = 800;
+  public static final int HEIGHT = 600;    
   public static final String NAME = "name";
   public static final String ISVISIBLE = "isvisible?";
   public static final String NAMEEMPTY = "_Empty_Concordance_Tree_";
@@ -309,7 +309,7 @@ public class ConcordanceTree extends Display
    // ------------------------------------------------
    
    // initialize the display
-   setSize(WIDTH,HEIGHT);
+   //setSize(WIDTH,HEIGHT);
    setItemSorter(new TreeDepthItemSorter());
    addControlListener(new ZoomToFitControl());
    addControlListener(new ZoomControl());
