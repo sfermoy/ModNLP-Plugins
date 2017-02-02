@@ -507,10 +507,38 @@ private String[] unmergeStrings(String s) {
           
           String[] colFrequencies = new String[column.length];
           //map for batch request
+          //map for batch request
           if (!parent.isStandAlone()) {
              
              colFrequencies = unmergeStrings(getbatchNoOfTokens(column));
-
+             
+             int batchDivisor = 1;
+             while(colFrequencies.length != column.length){
+                 colFrequencies = new String[0];
+                 batchDivisor*=2;
+                 int splits = column.length/batchDivisor;
+                 System.out.println(batchDivisor);
+                 
+                 for (int splitIndex = 0; splitIndex <= batchDivisor; splitIndex++) {
+                     //if where 
+                     if (splits * (splitIndex+1) > column.length){
+                         int leftoverlength = (column.length  ) - (splits * (splitIndex));
+                         String[] part = new String[leftoverlength];
+                         System.arraycopy(column, splits * (splitIndex), part, 0, leftoverlength);
+                         
+                         colFrequencies = concat(colFrequencies, unmergeStrings( getbatchNoOfTokens(part)));
+                     }else{
+                         String[] part = new String[splits];
+                         System.arraycopy(column, splits * (splitIndex), part, 0, splits);
+                         
+                         colFrequencies = concat(colFrequencies, unmergeStrings( getbatchNoOfTokens(part)));
+                         //IF colfrequencis and column should be same length break out of building colfrequencies
+                         if(splits * (splitIndex+1) >= column.length){
+                             break;
+                         }
+                     }
+                 }
+             }
           }
 
           //calculate the corpus frequencies of the words in the coulmn
