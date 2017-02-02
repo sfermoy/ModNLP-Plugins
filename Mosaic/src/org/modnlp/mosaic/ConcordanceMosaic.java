@@ -368,6 +368,15 @@ private String mergeStrings(String[] ss) {
     return sb.toString();
 }
 
+public String[] concat(String[] a, String[] b) {
+   int aLen = a.length;
+   int bLen = b.length;
+   String[] c= new String[aLen+bLen];
+   System.arraycopy(a, 0, c, 0, aLen);
+   System.arraycopy(b, 0, c, aLen, bLen);
+   return c;
+}
+
 private String[] unmergeStrings(String s) {
     return s.split(STRING_SEPARATOR_REGEX);
 }
