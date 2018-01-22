@@ -164,8 +164,8 @@ public class ConcordanceMosaic extends JFrame
             
         
     final JToggleButton frequencyButton = new JToggleButton("Column Word Frequency");
-    final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Within Window)");
-    final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Per Position)");
+    final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Global)");
+    final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Local)");
     
     
     JPanel pas = new JPanel();
@@ -391,6 +391,9 @@ private String[] unmergeStrings(String s) {
         graph = new Graph();
         graph.addColumn("word", String.class);
         graph.addColumn("frequency", Double.class);
+        graph.addColumn("tooltip", Double.class);
+        graph.addColumn("tooltipFreq", Double.class);
+        graph.addColumn("tooltipLayoutSwitch", Boolean.class);
         graph.addColumn("rel_freq", Boolean.class);
         graph.addColumn("column", Integer.class);
         graph.addColumn("sentences", ArrayList.class);
@@ -402,7 +405,7 @@ private String[] unmergeStrings(String s) {
 
         Tokeniser ss;
         int la = parent.getLanguage();
-
+        
 
         //System.out.println(d.getFrequency(d.getCaseTable().getAllCases("ladies")));
         //System.out.println(d.getDictProps().size());
@@ -437,7 +440,7 @@ private String[] unmergeStrings(String s) {
         sentences = new Object[nrows][];
         String keyword = (String)ss.splitWordOnly(parent.getConcordanceVector().elementAt(0).getKeywordAndRightContext()).toArray()[0];
 
-
+        double rel_column_length =0;
         for (Iterator<ConcordanceObject> p = parent.getConcordanceVector().iterator(); p.hasNext();) {
           ConcordanceObject co = p.next();
 
@@ -476,7 +479,7 @@ private String[] unmergeStrings(String s) {
         columnHeigths = new ArrayList<Double>();
         //for each column
         for (int i = 0; i < 9; i++) {
-          double rel_column_length = 0;
+          rel_column_length = 0;
           String[] column = new String[nrows];
           //loop throught columns entries
           for (int j = 0; j < nrows; j++) {
@@ -526,8 +529,7 @@ private String[] unmergeStrings(String s) {
                  colFrequencies = new String[0];
                  batchDivisor*=2;
                  int splits = column.length/batchDivisor;
-                 System.out.println(batchDivisor);
-                 
+                                  
                  for (int splitIndex = 0; splitIndex <= batchDivisor; splitIndex++) {
                      //if where 
                      if (splits * (splitIndex+1) > column.length){
@@ -609,17 +611,28 @@ private String[] unmergeStrings(String s) {
             n.set("add1",0);
             if(is_rel_freq){
                 if(is_pos_freq){
-                    n.set("frequency", (Double) (Rel_freq_counter.get(column[x])/rel_column_length));
+                    double val = (Double) (Rel_freq_counter.get(column[x]));
+                    n.set("frequency", val/rel_column_length);
+                    n.set("tooltip", val);
+                    n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
                     n.set("rel_freq", false);
+                    n.set("tooltipLayoutSwitch", true);
                 }
                 else{
-                   n.set("frequency", (Double) (Rel_freq_counter.get(column[x])));
+                   double val =(Double) (Rel_freq_counter.get(column[x]));
+                   n.set("frequency", val );
+                   n.set("tooltip", val);
+                   n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
                    n.set("rel_freq", true);
+                   n.set("tooltipLayoutSwitch", true);
                 }
                 
             }else{
-                n.set("frequency", (Double) (counter.get(column[x]) * 1.0) / nrows);
+                double val = (Double) (counter.get(column[x]) * 1.0) / nrows;
+                n.set("frequency", val);
+                n.set("tooltip", val);
                 n.set("rel_freq", false);
+                 n.set("tooltipLayoutSwitch", false);
             }
 
             n.set("column", i);
@@ -639,12 +652,13 @@ private String[] unmergeStrings(String s) {
             
           }
           columnHeigths.add(rel_column_length);
-          
+         
         }
 
 
-        if(is_rel_freq && !is_pos_freq){
+        if(is_rel_freq ){
         // we need to scale each box relative to a max col heigth
+        // and or calculate value for tooltip
             calculateRelFreqHeigths();
           }
 
@@ -683,16 +697,18 @@ private String[] unmergeStrings(String s) {
            
      private void calculateRelFreqHeigths(){
          columnHeigths.set(4, 0.0);
-         double maxH = Collections.max(columnHeigths);
-                            
+         double maxH = Collections.max(columnHeigths);                
          
          for ( Iterator iter = graph.nodes(); iter.hasNext();){
              Node item = (Node)iter.next();
              String word = (String)item.get("word");
-             double value = (Double)item.get("frequency");
+             double value = (Double)item.get("tooltip");
              //scaled to be proportional to each word not column
              value= (value)/(maxH);
-             item.set("frequency", value);
+             //if local view
+             if(!is_pos_freq)
+                item.set("frequency", value);
+             item.set("tooltip", value);
              if( (Integer)item.get("column")==4){
                  item.set("frequency", .99);
              }
@@ -807,7 +823,7 @@ private String[] unmergeStrings(String s) {
     //        ColorLib.color(new java.awt.Color(255,227,227)),
     //       ColorLib.color(new java.awt.Color(125,232,212))
     //       }
-    System.out.println(ColorLib.color(java.awt.Color.CYAN));
+    //System.out.println(ColorLib.color(java.awt.Color.CYAN));
     //.getInterpolatedPalette(5,ColorLib.color(java.awt.Color.CYAN), ColorLib.color(java.awt.Color.YELLOW))
     //5,ColorLib.color(java.awt.Color.PINK), ColorLib.color(java.awt.Color.MAGENTA)
     //ItemAction textColor = new ColorAction("graph.nodes",
@@ -885,3 +901,4 @@ private String[] unmergeStrings(String s) {
 
   }
 }
+
