@@ -46,12 +46,13 @@ public class MosaicTooltip extends ControlAdapter implements Control {
     
     public MosaicTooltip(ConcordanceBrowser parent){
         p=parent;
+        ToolTipManager.sharedInstance().setDismissDelay(Integer.MAX_VALUE);
        
     }
     public void itemClicked(VisualItem item, MouseEvent e) 
 	{
          String text = ((String) item.get("word"));
-         p.showContext((Integer)item.get("column"), text);   
+         p.showContext((Integer)item.get("column"), text);
         }
     
 	public void itemEntered(VisualItem item, MouseEvent e) 
@@ -60,12 +61,22 @@ public class MosaicTooltip extends ControlAdapter implements Control {
 		{
                         //ToolTipManager.sharedInstance().setEnabled(true);
 			String text = ((String) item.get("word"));
-			double fq = (Double) item.get("frequency");
-			fq=Math.round(fq*10000);
-                        fq=fq/100.0;
+			double fq = (Double) item.get("tooltip");
+                        boolean layout = (boolean) item.get("tooltipLayoutSwitch");
+			fq = Math.round(fq*10000);
+                        fq = fq/100.0;
                         Display d = (Display)e.getSource();
-                        d.setToolTipText(null);
-                        d.setToolTipText("Text: " + text +" \n " +" Frequency: " + fq);
+                        d.setToolTipText(null); 
+                        
+                        
+                        if(layout){
+                            double fq1 = (Double) item.get("tooltipFreq");
+                            fq1 = Math.round(fq1*10000);
+                            fq1 = fq1/100.0;
+                            d.setToolTipText("Text: \"" + text +"\" \n " +" Collocation Strength: " + fq +" Frequency: " + fq1);
+                        }
+                        else
+                             d.setToolTipText("Text: \"" + text +"\" \n " +" Frequency: " + fq);
                         
 			//JPopupMenu jpub = new JPopupMenu();
 			//jpub.add("Text: " + text);
@@ -86,3 +97,4 @@ public class MosaicTooltip extends ControlAdapter implements Control {
         
     }
 }
+
