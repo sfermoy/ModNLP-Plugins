@@ -49,11 +49,7 @@ public class MosaicTooltip extends ControlAdapter implements Control {
         ToolTipManager.sharedInstance().setDismissDelay(Integer.MAX_VALUE);
        
     }
-    public void itemClicked(VisualItem item, MouseEvent e) 
-	{
-         String text = ((String) item.get("word"));
-         p.showContext((Integer)item.get("column"), text);
-        }
+   
     
 	public void itemEntered(VisualItem item, MouseEvent e) 
 	{
@@ -61,6 +57,7 @@ public class MosaicTooltip extends ControlAdapter implements Control {
 		{
                         //ToolTipManager.sharedInstance().setEnabled(true);
 			String text = ((String) item.get("word"));
+                        
 			double fq = (Double) item.get("tooltip");
                         boolean layout = (boolean) item.get("tooltipLayoutSwitch");
 			fq = Math.round(fq*10000);
@@ -68,8 +65,8 @@ public class MosaicTooltip extends ControlAdapter implements Control {
                         Display d = (Display)e.getSource();
                         d.setToolTipText(null); 
                         
-                        
-                        if(layout){
+                        //if collocation strength view and not middle col
+                        if(layout || (Integer)item.get("column") !=4 ){
                             double fq1 = (Double) item.get("tooltipFreq");
                             fq1 = Math.round(fq1*10000);
                             fq1 = fq1/100.0;
@@ -77,16 +74,6 @@ public class MosaicTooltip extends ControlAdapter implements Control {
                         }
                         else
                              d.setToolTipText("Text: \"" + text +"\" \n " +" Frequency: " + fq);
-                        
-			//JPopupMenu jpub = new JPopupMenu();
-			//jpub.add("Text: " + text);
-			//jpub.add("Frequency: " + fq);
-                        
-			//jpub.show(e.getComponent(),(int) item.getX(),
-                          // (int) item.getY());
-                        //item.setStrokeColor(ColorLib.color(java.awt.Color.BLACK));
-                        //item.setStroke(StrokeLib.getStroke(8));
-                        
                        
 		}
 	}

@@ -97,6 +97,7 @@ public class ConcordanceMosaic extends JFrame
   private Graph graph = null;
   private JFrame thisFrame = null;
   private JProgressBar progressBar;
+  private String currentKeyword;
   JPanel tpanel = new JPanel(new BorderLayout());
   //private ConcordanceGraph conc_tree = null;
   private static String title = new String("MODNLP Plugin: ConcordanceMosaicViewer 0.2");
@@ -144,6 +145,10 @@ public class ConcordanceMosaic extends JFrame
   public VisualItem getSelected() {
     return selected;
   }
+  
+   public String getKeyword() {
+    return currentKeyword;
+  }
      
   public void setSelectedColor(Color c) {
     selectedColor= c;
@@ -152,6 +157,7 @@ public class ConcordanceMosaic extends JFrame
   public Color getSelectedColor() {
     return selectedColor;
   }
+  
 
   // plugin interface method
   public void activate() {
@@ -456,8 +462,8 @@ private String[] unmergeStrings(String s) {
           //right context
           tkns2 = (ss.splitWordOnly(co.getKeywordAndRightContext())).toArray();
           Object[] tkns = new Object[9];
+         
           //account for concordances at begining or end of docs
-
           if(tkns1.length>4){
             System.arraycopy(tkns1, (tkns1.length - 4), tkns, 0, 4);
           }else{
@@ -628,11 +634,17 @@ private String[] unmergeStrings(String s) {
                 }
                 
             }else{
+                
                 double val = (Double) (counter.get(column[x]) * 1.0) / nrows;
+                //if we include this line centre column of frequency view is divided equally amongst the 
+                //different versions of the keyword
+//                if( i==4)
+//                     val = (Double) (1.0) / column.length;
+                
                 n.set("frequency", val);
                 n.set("tooltip", val);
                 n.set("rel_freq", false);
-                 n.set("tooltipLayoutSwitch", false);
+                n.set("tooltipLayoutSwitch", false);
             }
 
             n.set("column", i);
@@ -646,8 +658,10 @@ private String[] unmergeStrings(String s) {
             if(x%2==0){
               color+=1;
             }
-            if(i==4)
+            if(i==4){
               color=6;
+              currentKeyword = column[x];
+            }
             n.set("color",color);
             
           }
@@ -696,7 +710,7 @@ private String[] unmergeStrings(String s) {
     }
            
      private void calculateRelFreqHeigths(){
-         columnHeigths.set(4, 0.0);
+         //columnHeigths.set(4, 0.0);
          double maxH = Collections.max(columnHeigths);                
          
          for ( Iterator iter = graph.nodes(); iter.hasNext();){
@@ -709,11 +723,11 @@ private String[] unmergeStrings(String s) {
              if(!is_pos_freq)
                 item.set("frequency", value);
              item.set("tooltip", value);
-             if( (Integer)item.get("column")==4){
-                 item.set("frequency", .99);
-             }
+//             if( (Integer)item.get("column")==4){
+//                 item.set("frequency", .99);
+//             }
                 
-  }
+           }
      }
 
   private void setDisplay() {

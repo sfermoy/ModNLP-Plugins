@@ -30,6 +30,7 @@ import prefuse.util.ColorLib;
 import prefuse.util.StrokeLib;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.event.InputEvent;
 import java.util.ArrayList;
 
 
@@ -55,7 +56,7 @@ public class HoverTooltip extends ControlAdapter implements Control {
     }
     
     public void itemClicked(VisualItem item, MouseEvent e){    
-       
+       if(e.getModifiers()==InputEvent.BUTTON1_MASK) {
         if(item instanceof NodeItem)
 		{
                     VisualItem old = themosaic.getSelected();
@@ -103,12 +104,54 @@ public class HoverTooltip extends ControlAdapter implements Control {
                         item.setHighlighted(true);
 
                         themosaic.setSelected(item);
-
+                        String text = ((String) item.get("word"));
+                        p.showContext((Integer)item.get("column"), text);
                         v.repaint();
                     }else{
-                        themosaic.setSelected(null);                    
+                        themosaic.setSelected(null);
+                        String text = ((String) item.get("word"));
+                        p.showContext((Integer)item.get("column"), text);
                     }
                 }
+       }
+        
+        //???*** right click to search word+[wildcards before]keyword or reverse for after
+       
+        if(e.getModifiers()==InputEvent.BUTTON3_MASK) {
+            int column = (Integer) item.get("column");
+            //if(column== 3 || column ==5){
+            if(column>0){
+                
+                String text = ((String) item.get("word"));
+                //middle column search
+                if (column == 4)
+                {
+                    System.out.println(text);
+                    p.requestConcordance(text);
+                }
+                
+                int position = 4- column;
+                if (position > 0){
+                    int rel_value = position - 1;
+                    String spaces = "+";
+                    for (int i = 0; i <rel_value; i++) {
+                        spaces+="*+";
+                    }
+                    
+                   // p.requestConcordance(text+"+"+"["+rel_value+"]"+ themosaic.getKeyword());
+                    p.requestConcordance(text+spaces+themosaic.getKeyword());
+                }else{
+                    int rel_value = Math.abs(position + 1);
+                    String spaces = "+";
+                    for (int i = 0; i <rel_value; i++) {
+                        spaces+="*+";
+                    }
+                    p.requestConcordance(themosaic.getKeyword()+spaces+text);
+                }
+            }
+
+          }
+        
     }
 	public void itemEntered(VisualItem item, MouseEvent e) 
 	{
@@ -140,3 +183,4 @@ public class HoverTooltip extends ControlAdapter implements Control {
             }
         }
 }
+

@@ -84,38 +84,38 @@ public class MosaicLayout extends Layout {
             VisualItem item = (VisualItem)iter.next();
             if(i==0)
                 isRelFreq= (Boolean)item.get("rel_freq");        
-            if((Integer)item.get("column")==4){
+            if((Integer)item.get("column") == 4){
                 //item.setFillColor(ColorLib.color(java.awt.Color.BLUE));
                 item.setEndFillColor(item.getFillColor());
-                item.setInteractive(false);
+                //item.setInteractive(false);
             
             }
             
             if(previous_column<(Integer)item.get("column")){
                 if(!isRelFreq){
                 if(height_used<450){
-                    int totalToAdd=0;
-                    int itemNumber=0;
-                    int amountToAdd =1;
-                    while(height_used<450){
+                    int totalToAdd = 0;
+                    int itemNumber = 0;
+                    int amountToAdd = 1;
+                    while(height_used < 450){
                         VisualItem modify = items_in_coulmn.get(itemNumber);
-                        setY(modify,null,modify.getY()+(amountToAdd*itemNumber));
-                        modify.set("add1",amountToAdd);
-                        totalToAdd+=amountToAdd;
+                        setY(modify, null, modify.getY() + (amountToAdd*itemNumber));
+                        modify.set("add1", amountToAdd);
+                        totalToAdd += amountToAdd;
                         itemNumber++;
-                        if(itemNumber>m){
-                            itemNumber=0;
-                            amountToAdd+=1;
+                        if(itemNumber > m){
+                            itemNumber = 0;
+                            amountToAdd += 1;
                         }
                         height_used++;
                     }
-                    for(int x=itemNumber;x<items_in_coulmn.size();x++){
+                    for(int x = itemNumber; x < items_in_coulmn.size(); x++){
                         VisualItem modify = items_in_coulmn.get(x);
-                        setY(modify,null,modify.getY()+(totalToAdd));
+                        setY(modify, null, modify.getY() + (totalToAdd));
                     }
                 }
                 }
-                height_used=0;
+                height_used = 0;
                 items_in_coulmn = new ArrayList<VisualItem>();
             }
             
@@ -200,4 +200,5 @@ public class MosaicLayout extends Layout {
     }
     
 } // end of class GridLayout
+
 
