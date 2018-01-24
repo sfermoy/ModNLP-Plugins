@@ -645,6 +645,7 @@ private String[] unmergeStrings(String s) {
                 n.set("tooltip", val);
                 n.set("rel_freq", false);
                 n.set("tooltipLayoutSwitch", false);
+                n.set("tooltipFreq", val);
             }
 
             n.set("column", i);
@@ -915,4 +916,5 @@ private String[] unmergeStrings(String s) {
 
   }
 }
+
 
