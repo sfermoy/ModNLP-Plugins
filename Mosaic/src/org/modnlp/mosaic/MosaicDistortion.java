@@ -42,6 +42,7 @@ public class MosaicDistortion extends Distortion {
         final Iterator iter = getVisualization().visibleItems(m_group);
         double overlap = 0;
         double overlapAdditional = 0;
+        //double overlapPrev = 0;
         int numExpand = 2;
         int expandSize = 42;
         VisualItem sel = themosaic.getSelected();
@@ -136,12 +137,19 @@ public class MosaicDistortion extends Distortion {
                                     }
                                    }
 
-                            
+                            Rectangle2D bboxprev;
                             //if anchor after start of box
                             if (ay >= y)
                                 //if ancor before end of box
                                 if (ay < (y + bbox.getHeight()))
-                                   if(bbox.getHeight() < 23){
+                                     if(bbox.getHeight() < 23){
+////                                      bboxprev = prev.getBounds();
+////                                    if(bboxprev.getHeight() < 23){
+////                                        prev.setSize(42);
+////                                         overlapPrev = 42 - bbox.getHeight();
+////                                        totalOverlap+= overlapPrev;
+//                                        //System.out.println(prev.get("word"));
+//                                    } 
                                     item.setSize(42);
                                     overlap = 42 - bbox.getHeight();
                                     expandNext = true;
@@ -181,8 +189,9 @@ public class MosaicDistortion extends Distortion {
 
 
                             item.setY(totalOverlap);
-                            overlap += overlapAdditional;
+                            overlap += overlapAdditional;//+overlapPrev;
                             overlapAdditional = 0;
+                            //overlapPrev = 0;
                     }else{
                             if ( sel != null )
                                 if(((Double) sel.get("frequency")) * 100 < 5)
