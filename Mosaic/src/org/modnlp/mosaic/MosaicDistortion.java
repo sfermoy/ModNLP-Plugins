@@ -26,33 +26,38 @@ import prefuse.visual.DecoratorItem;
 import prefuse.visual.VisualItem;
 
 public class MosaicDistortion extends Distortion {
-    private ConcordanceMosaic themosaic =null;
+    private ConcordanceMosaic themosaic = null;
   
     
     public MosaicDistortion(ConcordanceMosaic m) {
-        themosaic=m;
-        this.m_distortX =false;
-        this.m_distortY =false;
+        themosaic = m;
+        this.m_distortX = false;
+        this.m_distortY = false;
     }
     
     public void run(double frac) {
         Rectangle2D bounds = getLayoutBounds();
         Point2D anchor = correct(m_anchor, bounds);
-        
-       
+           
         final Iterator iter = getVisualization().visibleItems(m_group);
-        double overlap=0;
+        double overlap = 0;
+        double overlapAdditional = 0;
+        int numExpand = 2;
+        int expandSize = 42;
         VisualItem sel = themosaic.getSelected();
-        double yprevious=0;
-        double hprevious=48;
+        double yprevious = 0;
+        double hprevious = 42;
+        boolean expandNext = false;
         if ( sel != null ) {
          yprevious= sel.getY();
         }
+        VisualItem prev = null;
         while ( iter.hasNext() ) {
             VisualItem item = (VisualItem)iter.next();
+            
             if ( item.isFixed() ) continue;
-            double overlap2=0;
-             double seloverlap =0;
+            double overlap2 = 0;
+             double seloverlap = 0;
             // reset distorted values
             // TODO - make this play nice with animation?
             
@@ -61,121 +66,144 @@ public class MosaicDistortion extends Distortion {
             item.setSize(item.getEndSize());
             
             //VisualItem sel = themosaic.getSelected();
+            //find how much the selected item wae expaned by
             if ( sel != null ) 
-                if(((Double) sel.get("frequency"))*100 < 5){
-                    sel.setSize(48);
-                    seloverlap = 48 - (sel.getBounds().getHeight());
+                if(((Double) sel.get("frequency")) * 100 < 5){
+                    sel.setSize(42);
+                    seloverlap = 42 - (sel.getBounds().getHeight());
             }
             
             // compute distortion if we have a distortion focus
-          
-                
+                        
             Rectangle2D bbox = item.getBounds();
             double x = item.getX();
             double y = item.getY();
             double ay = 0, ax = 400;
             //bbox.getHeight();
-            //if a rectangle else a word
-            if(x%98==0){
+            //if visual item is rectangle not text.
+            if(x % 98 == 0){
+                //if mouse in window get the position
                   if ( anchor != null ) {
                      ay = anchor.getY();
                      ax = anchor.getX();
                   }
                       
                 //double sy = sel.getY(), sx = sel.getX();
+                  
+                //if there is a selected box and that box had to be expanded
                 if ( sel != null )
-                    if(((Double) sel.get("frequency"))*100<5)
-                        if( sel.getX()==x){
-                                        if(y>sel.getEndY()){                       
+                    if(((Double) sel.get("frequency")) * 100 < 5)
+                        
+                        //if this item is in same column as the selected one
+                        if( sel.getX() == x){
+                            //and is after the selected one
+                                        if(y > sel.getEndY()){                       
                                             //item.setY(yprevious + 48 -1);
-                                            overlap2=yprevious +  hprevious ;
-                                            hprevious=bbox.getHeight();
-                                            yprevious=overlap2;
+                                            overlap2 = yprevious +  hprevious ;
+                                            hprevious = bbox.getHeight();
+                                            yprevious = overlap2;
                                         }
                         }
-                // if ancor in column
-                if( ax>x){
-                        if(ax<(x + 98)){
+                // if anchor in column
+                if( ax > x){
+                        if(ax < (x + 98)){
                             double totalOverlap = y;
                             //if a rectangle is selected and is small enough to need expansion
                             if ( sel != null )
                                 //if selected is in column
-                                if( sel.getX()==x)
-                                    if(((Double) sel.get("frequency"))*100<5)
+                                if( sel.getX()== x)
+                                    if(((Double) sel.get("frequency")) * 100 < 5)
                                         //if rectangle is after selected
-                                        if(y>sel.getY()){
-                                            //set y to be pushed forward by selected
-                                             y= overlap2;
-                                             totalOverlap=overlap2 ;
+                                        if(y > sel.getY()){
+                                            //set y to be pushed forward 
+                                             y = overlap2;
+                                             totalOverlap = overlap2 ;
                                         }
-                            if(y>0)          
-                                if (totalOverlap==0)
+                            //if we d
+                            if(y > 0)          
+                                if (totalOverlap == 0)
                                     continue;
-                            //if ancor after start of box
-                            if (ay>=y)
-                                //if ancor before end of box
-                                if (ay<(y+bbox.getHeight()))
-                                   if(bbox.getHeight()<23){
-                                    item.setSize(48);
-                                    overlap=48 - bbox.getHeight();
+                            
+                             //expanding the next few boxes after hover
+                            if (expandNext){
+                                    item.setSize(expandSize);
+                                    overlapAdditional = expandSize - bbox.getHeight();
+                                    numExpand--;
+                                    expandSize += -15 ;
+                                    if(numExpand==0){
+                                    expandNext = false;
+                                    expandSize = 42;
+                                    }
                                    }
 
+                            
+                            //if anchor after start of box
+                            if (ay >= y)
+                                //if ancor before end of box
+                                if (ay < (y + bbox.getHeight()))
+                                   if(bbox.getHeight() < 23){
+                                    item.setSize(42);
+                                    overlap = 42 - bbox.getHeight();
+                                    expandNext = true;
+                                   }
+                            
+                            
+                            
                             //since selected is moved down account for items which have been overlaped
                             if ( sel != null )
                                 //if selected is in column
-                                if( sel.getX()==x)
-                                    if(((Double) sel.get("frequency"))*100<5)
-                                        if(ay<sel.getY())
-                                            if(y>(sel.getEndY())){
-                                                double tempy=y;
-                                                if(y<sel.getY()){
-                                                    y= overlap2-seloverlap;
-                                                    totalOverlap=overlap2 - seloverlap ;
+                                if( sel.getX() == x)
+                                    if(((Double) sel.get("frequency")) * 100 < 5)
+                                        if(ay < sel.getY())
+                                            if(y > (sel.getEndY())){
+                                                double tempy = y;
+                                                if(y < sel.getY()){
+                                                    y = overlap2-seloverlap;
+                                                    totalOverlap = overlap2 - seloverlap ;
                                                 }
-                                                if(y>sel.getY()){
-                                                    y= overlap2-overlap;
-                                                    totalOverlap=overlap2 - overlap ;
+                                                if(y > sel.getY()){
+                                                    y = overlap2-overlap;
+                                                    totalOverlap = overlap2 - overlap ;
                                                 }
-                                                if(y==tempy){
-                                                    y= overlap2-seloverlap;
-                                                    totalOverlap=overlap2 - seloverlap ;
+                                                if(y == tempy){
+                                                    y = overlap2 - seloverlap;
+                                                    totalOverlap = overlap2 - seloverlap ;
 
                                                 }
                                             }
-                             if(y>0)
-                                if (totalOverlap==0)
+                             if(y > 0)
+                                if (totalOverlap == 0)
                                    continue;
 
                             //if rectangle after expanded hovered box
-                            if(y>ay)
-                                totalOverlap+=overlap;
+                            if(y > ay)
+                                totalOverlap += overlap;
 
 
                             item.setY(totalOverlap);
-
-
-
-
-
+                            overlap += overlapAdditional;
+                            overlapAdditional = 0;
                     }else{
                             if ( sel != null )
-                                if(((Double) sel.get("frequency"))*100<5)
-                                if( sel.getX()==x){
-                                    if(y>sel.getY()){                                            
+                                if(((Double) sel.get("frequency")) * 100 < 5)
+                                if( sel.getX() == x){
+                                    if(y > sel.getY()){                                            
                                         item.setY(overlap2);                               
                                 }
                  }
                 }
             }else{
                     if ( sel != null )
-                        if(((Double) sel.get("frequency"))*100<5)
-                if( sel.getX()==x){
-                                if(y>sel.getY()){                       
+                        if(((Double) sel.get("frequency")) * 100 < 5)
+                if( sel.getX() == x){
+                                if(y > sel.getY()){                       
                                     item.setY(overlap2);                                 
                                 }
                  }
                 }
 
+                // remember last item
+                prev=item;
             }else{
                     DecoratorItem decorator = (DecoratorItem)item;
                     VisualItem decoratedItem = decorator.getDecoratedItem();
@@ -192,8 +220,12 @@ public class MosaicDistortion extends Distortion {
                     else{
                         decorator.setFont(FontLib.getFont("Tahoma", 0));
                     }
-                    if(decoratedItem.getSize()==48)
+                    if(decoratedItem.getSize() == 42)
                         decorator.setFont(FontLib.getFont("Tahoma", 16));
+                    if(decoratedItem.getSize() == 27)
+                        decorator.setFont(FontLib.getFont("Tahoma", 10));
+                    if(decoratedItem.getSize() == 12)
+                        decorator.setFont(FontLib.getFont("Tahoma", 8));
 
 
                     double x2 = bounds2.getCenterX();
@@ -232,3 +264,4 @@ public class MosaicDistortion extends Distortion {
     
    
 } 
+
