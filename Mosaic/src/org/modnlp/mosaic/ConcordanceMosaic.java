@@ -19,11 +19,8 @@
 
 package org.modnlp.mosaic;
 
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.EnvironmentConfig;
 import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,7 +28,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -39,7 +35,6 @@ import javax.swing.JProgressBar;
 import javax.swing.ToolTipManager;
 import modnlp.tec.client.TecClientRequest;
 import modnlp.idx.database.Dictionary;
-import modnlp.idx.database.FreqTable;
 import modnlp.idx.inverted.TokeniserJP;
 import modnlp.idx.inverted.TokeniserRegex;
 import modnlp.tec.client.ConcordanceBrowser;
@@ -75,6 +70,7 @@ import prefuse.controls.AnchorUpdateControl;
 import prefuse.data.tuple.TupleSet;
 import prefuse.render.LabelRenderer;
 import java.net.URL;
+import java.util.Arrays;
 import javax.swing.JToggleButton;
 
 /**
@@ -118,11 +114,12 @@ public class ConcordanceMosaic extends JFrame
   private Dictionary d =null;
   private BufferedReader input1;
   private BufferedReader input2;
-  private ArrayList columnWordsBatchRequest;
+  //private ArrayList columnWordsBatchRequest;
   
   private int total_no_tokens;
 
   public List<Double> columnHeigths = new ArrayList<Double>();
+  private boolean filterStopwords = false;
 
   public ConcordanceMosaic() {
     thisFrame = this;
@@ -169,7 +166,8 @@ public class ConcordanceMosaic extends JFrame
     getContentPane().add(tpanel, BorderLayout.CENTER);
             
         
-    final JToggleButton frequencyButton = new JToggleButton("Column Word Frequency");
+    final JToggleButton frequencyButton = new JToggleButton("Column Frequency");
+    final JToggleButton stopwordFrequencyButton = new JToggleButton("Column Frequency (No Stopwords)");
     final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Global)");
     final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Local)");
     
@@ -177,6 +175,7 @@ public class ConcordanceMosaic extends JFrame
     JPanel pas = new JPanel();
        
     pas.add(frequencyButton);
+    pas.add(stopwordFrequencyButton);
     pas.add(relFrequencyButton);
     pas.add(relFreqPosButton);
     frequencyButton.setSelected(true);
@@ -188,6 +187,22 @@ public class ConcordanceMosaic extends JFrame
           relFreqPosButton.setSelected(false);
           frequencyButton.setSelected(!is_rel_freq);
           relFrequencyButton.setSelected(is_rel_freq);
+          stopwordFrequencyButton.setSelected(false);
+          filterStopwords = false;  
+          
+          MakeMosaic();
+          //start();
+        }});
+    
+    stopwordFrequencyButton.addActionListener(new ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+          is_rel_freq = false;
+          is_pos_freq = false;
+          relFreqPosButton.setSelected(false);
+          frequencyButton.setSelected(false);
+          relFrequencyButton.setSelected(false);
+          stopwordFrequencyButton.setSelected(true);
+          filterStopwords = true;
             
           MakeMosaic();
           //start();
@@ -202,6 +217,7 @@ public class ConcordanceMosaic extends JFrame
             relFreqPosButton.setSelected(false);
             frequencyButton.setSelected(!is_rel_freq);
             relFrequencyButton.setSelected(is_rel_freq);
+            stopwordFrequencyButton.setSelected(false);
             MakeMosaic();
             //sort parent
             //start();
@@ -216,6 +232,7 @@ public class ConcordanceMosaic extends JFrame
             relFreqPosButton.setSelected(true);
             frequencyButton.setSelected(false);
             relFrequencyButton.setSelected(false);
+            stopwordFrequencyButton.setSelected(false);
             MakeMosaic();
             //sort parent
             //start();
@@ -260,12 +277,12 @@ public class ConcordanceMosaic extends JFrame
         result = d.getTotalNoOfTokens();
       }
       else {
-        totRequest.setServerURL("http://"+parent.getRemoteServer());
+        totRequest.setServerURL("http://" + parent.getRemoteServer());
         totRequest.setServerPORT(parent.getRemotePort());
         totRequest.put("request","nooftokens");
         //clRequest.remove(keyword)
         if (parent.isSubCorpusSelectionON())
-          totRequest.put("xquerywhere",parent.getXQueryWhere());
+        totRequest.put("xquerywhere",parent.getXQueryWhere());
         totRequest.put("casesensitive",parent.isCaseSensitive()?"TRUE":"FALSE");
         totRequest.setServerProgramPath("/totaltokens");
         URL toturl = new URL(totRequest.toString());
@@ -276,7 +293,7 @@ public class ConcordanceMosaic extends JFrame
                   
         input1 = new
           BufferedReader(new
-                         InputStreamReader(toturlConnection.getInputStream() ));
+                         InputStreamReader( toturlConnection.getInputStream() ));
         result =Integer.parseInt(input1.readLine()); 
                     
                     
@@ -391,7 +408,7 @@ private String[] unmergeStrings(String s) {
     if(!parent.isReceivingFromServer() ){
       try {
 
-        selected=null;
+        selected = null;
         String current = "";
         graph = null;
         graph = new Graph();
@@ -401,32 +418,18 @@ private String[] unmergeStrings(String s) {
         graph.addColumn("tooltipFreq", Double.class);
         graph.addColumn("tooltipLayoutSwitch", Boolean.class);
         graph.addColumn("rel_freq", Boolean.class);
+        graph.addColumn("makeInvis", Boolean.class);
+        graph.addColumn("isStopwordView", Boolean.class);
         graph.addColumn("column", Integer.class);
         graph.addColumn("sentences", ArrayList.class);
         graph.addColumn("color", Integer.class);
         graph.addColumn("add1", Integer.class);
 
         sentenceIndexToVisualitems = new HashMap<Integer, ArrayList<VisualItem> >();
-
-
+        
         Tokeniser ss;
         int la = parent.getLanguage();
-        
-
-        //System.out.println(d.getFrequency(d.getCaseTable().getAllCases("ladies")));
-        //System.out.println(d.getDictProps().size());
-        //System.out.println(d.getFileFrequencyTable(1, true).getTokenCount());
-        //System.out.println(d.getCaseTable().getAllCases("the").toString());
-        //System.out.println(d.getFrequency(d.getCaseTable().getAllCases("the")));
-
-
-
-        //System.out.println("did it work");
-        //System.out.println(freqTable.getTotalNoOfTokens());
-        //System.out.println(d.getCaseTable().getAllCases("opened"));
-
-
-
+       
         switch (la) {
         case modnlp.Constants.LANG_EN:
           ss = new TokeniserRegex("");
@@ -439,25 +442,22 @@ private String[] unmergeStrings(String s) {
           break;
         }
 
-
         int current_sentence = 0;
-
         nrows = parent.getConcordanceVector().size();
         sentences = new Object[nrows][];
         String keyword = (String)ss.splitWordOnly(parent.getConcordanceVector().elementAt(0).getKeywordAndRightContext()).toArray()[0];
-
-        double rel_column_length =0;
+        double rel_column_length = 0;
+        double stopword_column_length = 0;
         for (Iterator<ConcordanceObject> p = parent.getConcordanceVector().iterator(); p.hasNext();) {
           ConcordanceObject co = p.next();
 
           if (co == null) {
             break;
           }
-
+          
           Object[] tkns2;
           //left context
           Object[] tkns1 = (ss.split(co.getLeftContext())).toArray();
-
 
           //right context
           tkns2 = (ss.splitWordOnly(co.getKeywordAndRightContext())).toArray();
@@ -468,35 +468,31 @@ private String[] unmergeStrings(String s) {
             System.arraycopy(tkns1, (tkns1.length - 4), tkns, 0, 4);
           }else{
             System.arraycopy(tkns1, 0, tkns, 4-tkns1.length, tkns1.length);
-
           }
 
           if(tkns2.length>5){
             System.arraycopy(tkns2, 0, tkns, 4, 5);
           }else{
             System.arraycopy(tkns2, 0, tkns, 4, tkns2.length);
-
           }
           sentences[current_sentence] = tkns;
           current_sentence++;
-
-
         }
+        
         columnHeigths = new ArrayList<Double>();
         //for each column
         for (int i = 0; i < 9; i++) {
           rel_column_length = 0;
+          
           String[] column = new String[nrows];
           //loop throught columns entries
           for (int j = 0; j < nrows; j++) {
             Object[] ls = sentences[j];
             current = (String) ls[i];
             if(current == null)
-              current ="*null*";
+              current = "*null*";
 
             column[j] = current.toLowerCase();
-
-
 
           }
 
@@ -504,13 +500,13 @@ private String[] unmergeStrings(String s) {
           final Map<String, Integer> counter = new HashMap<String, Integer>();
           final Map<String, ArrayList<Integer> > wordToSentenceIndex = new HashMap<String, ArrayList<Integer> >();
           final Map<String, Double> Rel_freq_counter = new HashMap<String, Double>();
-          int coli =0;
+          int coli = 0;
           for (String str : column) {
             counter.put(str, 1 + (counter.containsKey(str) ? counter.get(str) : 0));
 
-            ArrayList temp=null;
+            ArrayList temp = null;
             if(wordToSentenceIndex.containsKey(str)){
-              temp=wordToSentenceIndex.get(str);
+              temp = wordToSentenceIndex.get(str);
             }else
               temp = new ArrayList();
             temp.add(coli);
@@ -520,11 +516,9 @@ private String[] unmergeStrings(String s) {
           }
           List<String> list1 = new ArrayList<String>(counter.keySet());
 
-
           column = list1.toArray(new String[list1.size()]);
           
           String[] colFrequencies = new String[column.length];
-          //map for batch request
           //map for batch request
           if (!parent.isStandAlone()) {
              
@@ -533,8 +527,8 @@ private String[] unmergeStrings(String s) {
              int batchDivisor = 1;
              while(colFrequencies.length != column.length){
                  colFrequencies = new String[0];
-                 batchDivisor*=2;
-                 int splits = column.length/batchDivisor;
+                 batchDivisor *= 2;
+                 int splits = column.length / batchDivisor;
                                   
                  for (int splitIndex = 0; splitIndex <= batchDivisor; splitIndex++) {
                      //if where 
@@ -557,23 +551,25 @@ private String[] unmergeStrings(String s) {
                  }
              }
           }
-
+          HashMap<String, Integer> hm = new HashMap<String, Integer>();
           //calculate the corpus frequencies of the words in the coulmn
           for (int x = 0; x < column.length; x++) {
-            int corpus_word_count=1;
+            int corpus_word_count = 1;
             if (parent.isStandAlone()) {
                 corpus_word_count = getNoOfTokens(column[x]);
             }
             else {
                 corpus_word_count = Integer.parseInt(colFrequencies[x]);
+                //build hash map for stopwords later
+                hm.put(column[x], corpus_word_count);
             }
             // Set infrequent words to a very small value
-            if (counter.get(column[x])<2) {
+            if (counter.get(column[x]) < 2) {
               Rel_freq_counter.put(column[x], 0.0000000001);
             }
             else{
-              double temp=(( ((counter.get(column[x])*10.0) /nrows) / ( ((corpus_word_count*10.0)/total_no_tokens) ) ));
-              if (temp<10000000.0) {
+              double temp=( ((counter.get(column[x]) * 10.0) / nrows) / ( ((corpus_word_count * 10.0) / total_no_tokens) ) );
+              if (temp < 10000000.0) {
                 Rel_freq_counter.put(column[x], temp);
               } else {
                 Rel_freq_counter.put(column[x], 0.0000000001);
@@ -608,16 +604,24 @@ private String[] unmergeStrings(String s) {
               });
 
           }
-
+          Arrays.sort(colFrequencies, new Comparator<String>() {
+        @Override
+        public int compare(String o1, String o2) {
+            return Integer.valueOf(o1).compareTo(Integer.valueOf(o2));
+        }
+    });
           column = list1.toArray(new String[list1.size()]);
-
+          
+          stopword_column_length = 0;
           for (int x = 0; x < column.length; x++) {
             Node n = graph.addNode();
             n.set("word", column[x]);
             n.set("add1",0);
+            n.set("isStopwordView", false);
+            n.set("makeInvis", false);
             if(is_rel_freq){
                 if(is_pos_freq){
-                    double val = (Double) (Rel_freq_counter.get(column[x]));
+                    double val = Rel_freq_counter.get(column[x]);
                     n.set("frequency", val/rel_column_length);
                     n.set("tooltip", val);
                     n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
@@ -625,7 +629,7 @@ private String[] unmergeStrings(String s) {
                     n.set("tooltipLayoutSwitch", true);
                 }
                 else{
-                   double val =(Double) (Rel_freq_counter.get(column[x]));
+                   double val = Rel_freq_counter.get(column[x]);
                    n.set("frequency", val );
                    n.set("tooltip", val);
                    n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
@@ -636,38 +640,66 @@ private String[] unmergeStrings(String s) {
             }else{
                 
                 double val = (Double) (counter.get(column[x]) * 1.0) / nrows;
+                //double val = (Double) (counter.get(column[x]) * 1.0);
                 //if we include this line centre column of frequency view is divided equally amongst the 
                 //different versions of the keyword
 //                if( i==4)
 //                     val = (Double) (1.0) / column.length;
                 
-                n.set("frequency", val);
-                n.set("tooltip", val);
-                n.set("rel_freq", false);
-                n.set("tooltipLayoutSwitch", false);
-                n.set("tooltipFreq", val);
+                if(filterStopwords){      
+                    n.set("rel_freq", true);
+                    n.set("tooltipLayoutSwitch", false);
+                    n.set("tooltipFreq",10.0 );//(Double) (counter.get(column[x]) * 1.0) / nrows);
+                    Double thresh;
+                    if (parent.isStandAlone()) {
+                        thresh = (getNoOfTokens(column[x])*1.0)/total_no_tokens;
+                    }
+                    else {
+                        thresh = (hm.get(column[x])*1.0)/total_no_tokens;
+                    }
+                    
+                    if(thresh >= 0.0015 && i != 4 ){
+                        n.set("frequency", 0.0000000001);
+                        n.set("tooltip",   0.0000000001);
+                        n.set("makeInvis", true);
+                    }else{
+
+                           stopword_column_length += val  ;
+                           n.set("frequency", val );
+                           n.set("tooltip", val);                       
+                    }
+                }else{
+                    n.set("frequency", val);
+                    n.set("rel_freq", false);
+                    n.set("tooltip", val);
+                    n.set("tooltipLayoutSwitch", false);
+                    n.set("tooltipFreq", val);
+                }      
             }
 
             n.set("column", i);
             n.set("sentences", wordToSentenceIndex.get(column[x]));
-            int color= 0;
-            if(i%2==0){
-              color =2;
+            int color = 0;
+            if(i % 2 == 0){
+              color = 2;
             }else{
-              color=4;
+              color = 4;
             }
-            if(x%2==0){
-              color+=1;
+            if(x % 2 == 0){
+              color += 1;
             }
-            if(i==4){
-              color=6;
+            if(i == 4){
+              color = 6;
               currentKeyword = column[x];
             }
             n.set("color",color);
             
           }
+          if (is_rel_freq){
           columnHeigths.add(rel_column_length);
-         
+        }else{
+          columnHeigths.add(stopword_column_length);
+          }
         }
 
 
@@ -676,6 +708,10 @@ private String[] unmergeStrings(String s) {
         // and or calculate value for tooltip
             calculateRelFreqHeigths();
           }
+        
+        if(!is_rel_freq && filterStopwords){
+         calculateStopwordFreqHeigths();
+        }
 
         setDisplay();
         //add Visual item to hashmap with index of sentence numbers
@@ -708,27 +744,51 @@ private String[] unmergeStrings(String s) {
                   
     }
 
-    }
+  }
            
      private void calculateRelFreqHeigths(){
-         //columnHeigths.set(4, 0.0);
+         double keyHeight = columnHeigths.get(4);
+         columnHeigths.set(4, 0.0);
          double maxH = Collections.max(columnHeigths);                
          
          for ( Iterator iter = graph.nodes(); iter.hasNext();){
              Node item = (Node)iter.next();
-             String word = (String)item.get("word");
+             //String word = (String)item.get("word");
              double value = (Double)item.get("tooltip");
              //scaled to be proportional to each word not column
              value= (value)/(maxH);
              //if local view
              if(!is_pos_freq)
-                item.set("frequency", value);
+                if((Integer)item.get("column") != 4){
+                    item.set("frequency", value);
+                }
+                else{
+                    item.set("frequency", (Double)item.get("tooltip")/keyHeight);
+                }
+                    
              item.set("tooltip", value);
 //             if( (Integer)item.get("column")==4){
 //                 item.set("frequency", .99);
 //             }
                 
            }
+     }
+     
+   private void calculateStopwordFreqHeigths(){
+         columnHeigths.set(4, 0.0);
+         double maxH = Collections.max(columnHeigths);
+         for ( Iterator iter = graph.nodes(); iter.hasNext();){
+             Node item = (Node)iter.next();
+            
+             double value = ((Double) item.get("tooltip")) ;
+             value= ((value)/(maxH));
+
+             if((Integer)item.get("column") != 4)
+                item.set("frequency", value);
+             //item.set("tooltip",value );
+         
+           }
+        
      }
 
   private void setDisplay() {

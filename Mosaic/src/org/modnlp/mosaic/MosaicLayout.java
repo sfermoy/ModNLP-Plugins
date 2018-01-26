@@ -61,8 +61,6 @@ public class MosaicLayout extends Layout {
        
     }
     
-    
-    
     /**
      * @see prefuse.action.Action#run(double)
      */
@@ -200,5 +198,6 @@ public class MosaicLayout extends Layout {
     }
     
 } // end of class GridLayout
+
 
 

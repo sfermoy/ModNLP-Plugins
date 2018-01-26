@@ -66,7 +66,7 @@ public class MosaicTooltip extends ControlAdapter implements Control {
                         d.setToolTipText(null); 
                         
                         //if collocation strength view and not middle col
-                        if(layout || (Integer)item.get("column") !=4 ){
+                        if(layout && (Integer)item.get("column") !=4 ){
                             double fq1 = (Double) item.get("tooltipFreq");
                             fq1 = Math.round(fq1*10000);
                             fq1 = fq1/100.0;
@@ -84,4 +84,5 @@ public class MosaicTooltip extends ControlAdapter implements Control {
         
     }
 }
+
 

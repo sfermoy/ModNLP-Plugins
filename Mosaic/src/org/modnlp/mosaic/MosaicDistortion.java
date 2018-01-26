@@ -66,6 +66,11 @@ public class MosaicDistortion extends Distortion {
             item.setY(item.getEndY());
             item.setSize(item.getEndSize());
             
+            
+            if( (boolean) item.get("makeInvis") == true){
+                item.setVisible(false);
+            }
+            
             //VisualItem sel = themosaic.getSelected();
             //find how much the selected item wae expaned by
             if ( sel != null ) 
