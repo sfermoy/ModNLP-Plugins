@@ -64,14 +64,20 @@ import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PipedReader;
+import java.io.PipedWriter;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import prefuse.action.distortion.Distortion;
 import prefuse.controls.AnchorUpdateControl;
 import prefuse.data.tuple.TupleSet;
 import prefuse.render.LabelRenderer;
 import java.net.URL;
+import java.text.NumberFormat;
 import java.util.Arrays;
 import javax.swing.JToggleButton;
+import modnlp.idx.headers.HeaderDBManager;
+import modnlp.tec.client.plugin.FqListBrowser;
 
 /**
  *
@@ -111,7 +117,7 @@ public class ConcordanceMosaic extends JFrame
   private  Distortion dist;
   private HttpURLConnection exturlConnection;
   private HttpURLConnection toturlConnection;
-  private Dictionary d =null;
+  private Dictionary d = null;
   private BufferedReader input1;
   private BufferedReader input2;
   //private ArrayList columnWordsBatchRequest;
@@ -120,6 +126,10 @@ public class ConcordanceMosaic extends JFrame
 
   public List<Double> columnHeigths = new ArrayList<Double>();
   private boolean filterStopwords = false;
+  
+  private BufferedReader input;
+  final Map<String, Integer> wordCounts = new HashMap<String, Integer>();
+  
 
   public ConcordanceMosaic() {
     thisFrame = this;
@@ -266,7 +276,8 @@ public class ConcordanceMosaic extends JFrame
       {
         System.err.println("Exception: couldn't create stream socket"+e);
       }
-    total_no_tokens = getTotalNoTokens();
+    //total_no_tokens = getTotalNoTokens();
+    buildFreqHash();
     MakeMosaic();
   }
     
@@ -405,6 +416,9 @@ private String[] unmergeStrings(String s) {
 }
 
   public void MakeMosaic() {
+    if( total_no_tokens != getTotalNoTokens()){
+        buildFreqHash();
+    }
     if(!parent.isReceivingFromServer() ){
       try {
 
@@ -518,39 +532,39 @@ private String[] unmergeStrings(String s) {
 
           column = list1.toArray(new String[list1.size()]);
           
-          String[] colFrequencies = new String[column.length];
+//          String[] colFrequencies = new String[column.length];
           //map for batch request
-          if (!parent.isStandAlone()) {
-             
-             colFrequencies = unmergeStrings(getbatchNoOfTokens(column));
-             
-             int batchDivisor = 1;
-             while(colFrequencies.length != column.length){
-                 colFrequencies = new String[0];
-                 batchDivisor *= 2;
-                 int splits = column.length / batchDivisor;
-                                  
-                 for (int splitIndex = 0; splitIndex <= batchDivisor; splitIndex++) {
-                     //if where 
-                     if (splits * (splitIndex+1) > column.length){
-                         int leftoverlength = (column.length  ) - (splits * (splitIndex));
-                         String[] part = new String[leftoverlength];
-                         System.arraycopy(column, splits * (splitIndex), part, 0, leftoverlength);
-                         
-                         colFrequencies = concat(colFrequencies, unmergeStrings( getbatchNoOfTokens(part)));
-                     }else{
-                         String[] part = new String[splits];
-                         System.arraycopy(column, splits * (splitIndex), part, 0, splits);
-                         
-                         colFrequencies = concat(colFrequencies, unmergeStrings( getbatchNoOfTokens(part)));
-                         //IF colfrequencis and column should be same length break out of building colfrequencies
-                         if(splits * (splitIndex+1) >= column.length){
-                             break;
-                         }
-                     }
-                 }
-             }
-          }
+//          if (!parent.isStandAlone()) {
+//             
+//             colFrequencies = unmergeStrings(getbatchNoOfTokens(column));
+//             
+//             int batchDivisor = 1;
+//             while(colFrequencies.length != column.length){
+//                 colFrequencies = new String[0];
+//                 batchDivisor *= 2;
+//                 int splits = column.length / batchDivisor;
+//                                  
+//                 for (int splitIndex = 0; splitIndex <= batchDivisor; splitIndex++) {
+//                     //if where 
+//                     if (splits * (splitIndex+1) > column.length){
+//                         int leftoverlength = (column.length  ) - (splits * (splitIndex));
+//                         String[] part = new String[leftoverlength];
+//                         System.arraycopy(column, splits * (splitIndex), part, 0, leftoverlength);
+//                         
+//                         colFrequencies = concat(colFrequencies, unmergeStrings( getbatchNoOfTokens(part)));
+//                     }else{
+//                         String[] part = new String[splits];
+//                         System.arraycopy(column, splits * (splitIndex), part, 0, splits);
+//                         
+//                         colFrequencies = concat(colFrequencies, unmergeStrings( getbatchNoOfTokens(part)));
+//                         //IF colfrequencis and column should be same length break out of building colfrequencies
+//                         if(splits * (splitIndex+1) >= column.length){
+//                             break;
+//                         }
+//                     }
+//                 }
+//             }
+//          }
           HashMap<String, Integer> hm = new HashMap<String, Integer>();
           //calculate the corpus frequencies of the words in the coulmn
           for (int x = 0; x < column.length; x++) {
@@ -559,8 +573,16 @@ private String[] unmergeStrings(String s) {
                 corpus_word_count = getNoOfTokens(column[x]);
             }
             else {
-                corpus_word_count = Integer.parseInt(colFrequencies[x]);
+                //corpus_word_count = Integer.parseInt(colFrequencies[x]);
                 //build hash map for stopwords later
+                corpus_word_count = wordCounts.getOrDefault(column[x], -1);
+                if (corpus_word_count == -1) {
+                    System.out.println(column[x]);
+                    corpus_word_count = 0;
+                }
+                
+                //System.out.println(wordCounts.getOrDefault(column[x], 10));
+                
                 hm.put(column[x], corpus_word_count);
             }
             // Set infrequent words to a very small value
@@ -604,12 +626,12 @@ private String[] unmergeStrings(String s) {
               });
 
           }
-          Arrays.sort(colFrequencies, new Comparator<String>() {
-        @Override
-        public int compare(String o1, String o2) {
-            return Integer.valueOf(o1).compareTo(Integer.valueOf(o2));
-        }
-    });
+//          Arrays.sort(colFrequencies, new Comparator<String>() {
+//        @Override
+//        public int compare(String o1, String o2) {
+//            return Integer.valueOf(o1).compareTo(Integer.valueOf(o2));
+//        }
+//    });
           column = list1.toArray(new String[list1.size()]);
           
           stopword_column_length = 0;
@@ -954,6 +976,8 @@ private String[] unmergeStrings(String s) {
       thread.setPriority (Thread.MIN_PRIORITY);
       thread.start();
     }
+    
+    downloadFreqList();
   }
 
   public void stop() {
@@ -964,7 +988,8 @@ private String[] unmergeStrings(String s) {
     }
   }
 
-  public void run(){
+  public void run(){  
+    buildFreqHash();
     MakeMosaic();
   }
   
@@ -975,6 +1000,111 @@ private String[] unmergeStrings(String s) {
     //start();
 
   }
+  
+  
+  private void downloadFreqList(){
+     input = null;
+    try {
+      if (parent.isStandAlone()) {
+
+      }
+      else {
+        TecClientRequest rq = new TecClientRequest();
+        rq.setServerURL("http://"+parent.getRemoteServer());
+        rq.setServerPORT(parent.getRemotePort());
+        rq.put("request","freqlist");
+        //if (parent.isSubCorpusSelectionON()){
+        rq.put("skipfirst",""+0);
+        rq.put("maxlistsize",""+0);
+        if (parent.isSubCorpusSelectionON())
+          rq.put("xquerywhere",parent.getXQueryWhere());
+        rq.put("casesensitive",parent.isCaseSensitive()?"TRUE":"FALSE");
+        //}
+        rq.setServerProgramPath("/freqlist");
+        URL exturl = new URL(rq.toString());
+        exturlConnection = (HttpURLConnection) exturl.openConnection();
+        //exturlConnection.setUseCaches(false);
+        exturlConnection.setRequestMethod("GET");
+        //System.err.println("--input set---");
+      }
+    }
+    catch(IOException e)
+      {
+        System.err.println("Exception: couldn't create stream socket"+e);
+        JOptionPane.showMessageDialog(null, "Couldn't get frequency list: "+e);      
+      }
+    
+    
+  }
+  
+  
+  class FqlPrinter extends Thread {
+    public FqlPrinter () {
+      //super("Frequency list producer");
+    }
+    public void run (){
+      try {
+        if (!parent.isStandAlone()){
+          input = new
+            BufferedReader(new
+                           InputStreamReader(exturlConnection.getInputStream() ));
+        }
+      } catch (Exception e) {
+        System.err.println("FqlPrinter: " + e);
+        e.printStackTrace();
+      }
+    }
+  }
+  
+  public void buildFreqHash(){
+      String textLine = "";
+    StringBuffer cstats = new StringBuffer();
+    try {
+      int i= 0;
+      int dldCount = 0;
+      //int rank = 1;
+      //int ttok = 0;
+      int maxListSize = 0;
+      int notokens = 0;
+      double ttratio = 0;
+      //if (parent.isStandAlone()) {
+        (new ConcordanceMosaic.FqlPrinter()).start();
+        //}
+      
+      NumberFormat nf =  NumberFormat.getInstance(); 
+
+      while (input==null){
+        thread.sleep(100);
+      }
+      while ((maxListSize == 0 || dldCount <= maxListSize) && 
+             (textLine = input.readLine()) != null 
+             ) 
+        {
+          if (textLine.equals(""))
+            continue;
+            String [] row = textLine.split(modnlp.Constants.LINE_ITEM_SEP);
+            if (row[0].equals("0")) {
+
+              if (row[1].equals(modnlp.idx.database.Dictionary.TTOKENS_LABEL)){
+                notokens = (new Integer(row[2])).intValue();
+                total_no_tokens = notokens;    
+              }
+            }
+            else {
+                wordCounts.put(row[1].toString(), (new Integer(row[2])).intValue() );    
+            }
+    }
+      System.err.println("read thread finished");
+    }
+    catch (Exception e)
+      {
+        System.err.println(cstats.toString());
+        System.err.println("Exception: " + e);
+        System.err.println("Line: |" + textLine+"|");
+        e.printStackTrace();
+      }
+  }
+ 
 }
 
 
