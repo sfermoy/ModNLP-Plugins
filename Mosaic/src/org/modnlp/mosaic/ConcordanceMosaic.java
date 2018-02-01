@@ -241,6 +241,7 @@ public class ConcordanceMosaic extends JFrame
         try {
             if (parent.isStandAlone()) {
                 d = parent.getDictionary();
+                total_no_tokens = d.getTotalNoOfTokens();
             } else {
                 clRequest.setServerURL("http://" + parent.getRemoteServer());
                 clRequest.setServerPORT(parent.getRemotePort());
@@ -257,7 +258,9 @@ public class ConcordanceMosaic extends JFrame
         } catch (IOException e) {
             System.err.println("Exception: couldn't create stream socket" + e);
         }
-        buildFreqHash();
+        if (!parent.isStandAlone())
+          buildFreqHash();
+        System.err.println("MAKING MOS");
         MakeMosaic();
     }
 
@@ -333,7 +336,7 @@ public class ConcordanceMosaic extends JFrame
     }
 
     public void MakeMosaic() {
-        if (total_no_tokens != getTotalNoTokens()) {
+        if (total_no_tokens != getTotalNoTokens() && !parent.isStandAlone() ) {
             buildFreqHash();
         }
         if (!parent.isReceivingFromServer()) {
@@ -442,13 +445,13 @@ public class ConcordanceMosaic extends JFrame
                             corpus_word_count = getNoOfTokens(column[x]);
                         } else {
                             //build hash map for stopwords later
-                            corpus_word_count = wordCounts.getOrDefault(column[x], -1);
+                          corpus_word_count = wordCounts.getOrDefault(column[x], -1);
                             if (corpus_word_count == -1) {
                                 //System.out.println(column[x]);
                                 corpus_word_count = 0;
                             }
-                            hm.put(column[x], corpus_word_count);
                         }
+                        hm.put(column[x], corpus_word_count);
                         // Set infrequent words to a very small value
                         if (counter.get(column[x]) < 2) {
                             Rel_freq_counter.put(column[x], 0.0000000001);
@@ -762,8 +765,9 @@ public class ConcordanceMosaic extends JFrame
     }
 
     public void run() {
+      if (!parent.isStandAlone())
         buildFreqHash();
-        MakeMosaic();
+      MakeMosaic();
     }
 
     @Override
