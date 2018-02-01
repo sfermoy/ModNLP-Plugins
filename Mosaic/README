@@ -1,2 +1,55 @@
 Concordance Mosaic plugin. Maybe use autojar package to pack the
 prefuse libraries into the plugin distribution. 
+
+
+-- Note on the relation between the Mosaic scaling metric (call it M)
+and (pointwise) mutual information (I).
+
+Mutual information is an information theoretic function used to
+quantify dependence between values of two distinct random variables,
+say W and K, measuring the degree of dependency between them. It is
+often used in corpus linguistics as a measure of collocation strength,
+and is defined as follows:
+
+I(w;k) = log [ p(w,k) / (p(w)*p(k) ) ] = log [ p(w|k) / p(w) ]      (1)
+
+If W=w is independent of K=k then p(w,k) = p(w)*p(k) and the mutual
+information is log(1)=0.
+
+In collocation analysis we assume a probability model where W, K, etc
+are multinomial random variables, ranging over vocabulary items. So,
+abusing notation somewhat we could write, for instance, W='the' and
+K='end' for the event that a word 'the' occurs next to the keyword
+'end'. We could estimate probabilities for such events by
+counting and computing relative frequencies. So, the relative
+frequency of the word 'the' could be written as P(W='the') = (number
+of occurences of the token 'the' in the corpus) / (total number of
+tokens in the corpus) = #(the) / \sum_x #(x). The probability that
+word w occurs in the context c of word k could be written as
+
+p(w|k) = (number of occurrences of w in column c)
+         / (number of tokens in column c)
+       = #(w,k) / \sum_W #(W,k).                                    (2)
+
+The Mosaic metric (for the 'global', or 'within column' display)
+is defined as follows:
+
+M(w,k) = (#(w,k) / N ) / (#(w)/\sum_x(x))
+       = (#(w,k) / N ) / p(w)                                      (3)
+
+where N is the number of types in column c. Now, from (2) we rewrite
+the numerator of (3) as
+
+ #(w,k) / N  = p(w|k) * \sum_x #(x,k) / N
+            = p(w|k) * E[W|k]                                       (4)
+
+where the expectation E[W|k] = \sum_w p(w|k) #(w,k) is the average
+number of tokens per type in column c.
+
+Replacing (4) into (3) we get
+
+M(w,k) / E[W|k] = p(w|k) / p(w)  and therefore
+
+I(w;k) = log (M(w,k)/E[W|k])                                        (5)
+
+
