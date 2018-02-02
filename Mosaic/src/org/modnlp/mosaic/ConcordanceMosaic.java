@@ -268,6 +268,7 @@ public class ConcordanceMosaic extends JFrame
         int result = 0;
         try {
             if (parent.isStandAlone()) {
+                d = parent.getDictionary();
                 result = d.getTotalNoOfTokens();
             } else {
                 totRequest.setServerURL("http://" + parent.getRemoteServer());
@@ -298,6 +299,9 @@ public class ConcordanceMosaic extends JFrame
 
         try {
             if (parent.isStandAlone()) {
+                System.out.println(d);
+                System.out.println(parent);
+                d = parent.getDictionary();
                 result = d.getFrequency(d.getCaseTable().getAllCases(word));
             } else {
 
