@@ -281,7 +281,7 @@ public class ConcordanceMosaic extends JFrame
                 URL toturl = new URL(totRequest.toString());
                 toturlConnection = (HttpURLConnection) toturl.openConnection();
                 toturlConnection.setRequestMethod("GET");
-                input1 = new BufferedReader(new InputStreamReader(toturlConnection.getInputStream()));
+                input1 = new BufferedReader(new InputStreamReader(toturlConnection.getInputStream(), "UTF-8"));
                 result = Integer.parseInt(input1.readLine());
 
                 toturlConnection.disconnect();
@@ -313,7 +313,7 @@ public class ConcordanceMosaic extends JFrame
                 URL exturl = new URL(clRequest.toString());
                 exturlConnection = (HttpURLConnection) exturl.openConnection();
                 exturlConnection.setRequestMethod("GET");
-                input2 = new BufferedReader(new InputStreamReader(exturlConnection.getInputStream()));
+                input2 = new BufferedReader(new InputStreamReader(exturlConnection.getInputStream(), "UTF-8"));
                 result = Integer.parseInt(input2.readLine());
                 exturlConnection.disconnect();
 
@@ -445,11 +445,7 @@ public class ConcordanceMosaic extends JFrame
                             corpus_word_count = getNoOfTokens(column[x]);
                         } else {
                             //build hash map for stopwords later
-                          corpus_word_count = wordCounts.getOrDefault(column[x], -1);
-                            if (corpus_word_count == -1) {
-                                //System.out.println(column[x]);
-                                corpus_word_count = 0;
-                            }
+                          corpus_word_count = getWordCount(column[x]);
                         }
                         hm.put(column[x], corpus_word_count);
                         // Set infrequent words to a very small value
@@ -789,7 +785,7 @@ public class ConcordanceMosaic extends JFrame
                 rq.setServerPORT(parent.getRemotePort());
                 rq.put("request", "freqlist");
                 rq.put("skipfirst", "" + 0);
-                rq.put("maxlistsize", "" + 0);
+                rq.put("maxlistsize", "-1"); // print freq up to the first hapax
                 if (parent.isSubCorpusSelectionON()) {
                     rq.put("xquerywhere", parent.getXQueryWhere());
                 }
@@ -814,7 +810,7 @@ public class ConcordanceMosaic extends JFrame
         public void run() {
             try {
                 if (!parent.isStandAlone()) {
-                    input = new BufferedReader(new InputStreamReader(exturlConnection.getInputStream()));
+                    input = new BufferedReader(new InputStreamReader(exturlConnection.getInputStream(), "UTF-8"));
                 }
             } catch (Exception e) {
                 System.err.println("FqlPrinter: " + e);
@@ -851,6 +847,7 @@ public class ConcordanceMosaic extends JFrame
                     }
                 } else {
                     wordCounts.put(row[1].toString(), (new Integer(row[2])).intValue());
+                    System.err.println(row[1].toString()+"=="+(new Integer(row[2])).intValue());
                 }
             }
             System.err.println("read thread finished");
@@ -862,5 +859,15 @@ public class ConcordanceMosaic extends JFrame
         }
     }
 
+  private int getWordCount(String word){
+    int wc = wordCounts.getOrDefault(word, -1);    
+    // wc can never be 0, since the word appears in the concordance list!
+    if (wc == -1){
+      System.err.println("CWC for "+word+" not found");
+      return 1;
+    }
+    return wc;
+  }
+  
 }
 
