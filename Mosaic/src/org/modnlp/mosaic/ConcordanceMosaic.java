@@ -123,7 +123,8 @@ public class ConcordanceMosaic extends JFrame
   private boolean filterStopwords = false;
   private BufferedReader input;
   private Map<String, Integer> wordCounts = null;
-
+  private String currentCorpusAddress = null;
+  
   public ConcordanceMosaic() {
     thisFrame = this;
   }
@@ -257,9 +258,14 @@ public class ConcordanceMosaic extends JFrame
     } catch (IOException e) {
       System.err.println("Exception: couldn't create stream socket" + e);
     }
+    currentCorpusAddress = getRemoteCorpusAddress();
     if (!parent.isStandAlone())
       buildFreqHash();
     MakeMosaic();
+  }
+
+  private String getRemoteCorpusAddress(){
+    return parent.getRemoteServer()+parent.getRemotePort();
   }
   
   private int getTotalNoTokens() {
@@ -336,9 +342,13 @@ public class ConcordanceMosaic extends JFrame
   }
   
   public void MakeMosaic() {
-    if (wordCounts == null && !parent.isStandAlone() ) {
-      buildFreqHash();
-    }
+    if (!parent.isStandAlone() &&
+        ( wordCounts == null || !currentCorpusAddress.equals(getRemoteCorpusAddress())  ) )
+      {
+        System.err.println(currentCorpusAddress+"!="+getRemoteCorpusAddress());
+        currentCorpusAddress = getRemoteCorpusAddress();
+        buildFreqHash();
+      }
     if (!parent.isReceivingFromServer()) {
       try {
         selected = null;
