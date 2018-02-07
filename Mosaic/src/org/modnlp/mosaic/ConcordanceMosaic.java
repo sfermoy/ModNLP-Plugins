@@ -799,9 +799,11 @@ public class ConcordanceMosaic extends JFrame
         rq.put("request", "freqlist");
         rq.put("skipfirst", "" + 0);
         rq.put("maxlistsize", "-1"); // print freq up to the first hapax
-        if (parent.isSubCorpusSelectionON()) {
-          rq.put("xquerywhere", parent.getXQueryWhere());
-        }
+        // sl: perhaps we should always download the whole fq list
+        // I'm commenting this out 
+        //if (parent.isSubCorpusSelectionON()) {
+        //rq.put("xquerywhere", parent.getXQueryWhere());
+        //}
         rq.put("casesensitive", parent.isCaseSensitive() ? "TRUE" : "FALSE");
         rq.setServerProgramPath("/freqlist");
         URL exturl = new URL(rq.toString());
