@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Shanes Projects</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Project repo">
+    <meta name="author" content="Shane Sheehan">
+
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+    </style>
+<style>
+	body {
+	  font: 10px sans-serif;
+	}
+
+	.axis path,
+	.axis line {
+	  fill: none;
+	  stroke: #000;
+	  shape-rendering: crispEdges;
+	}
+
+	.dot {
+	  stroke: #000;
+	}
+
+	div.horizontalgap {
+	  float: left;
+	  overflow: hidden;
+	  height: 1px;
+	  width: 0px;
+	}
+</style>
+</head>
+
+<body>
+	<div class="horizontalgap" style="width:90px"></div>
+	<div div style="float: left" id="csvbox" >
+		<input type="file" id="csvfile" name="uploadCSV" onchange="loadFile()" placeholder="Pre-Modern Sample"  />
+	</div>
+
+	<div class="horizontalgap" style="width:160px"></div>
+	<div div style="float: left" id="but" >
+	  <button onclick="redrawVis()">Redraw</button>
+	</div> 
+	<div class="horizontalgap" style="width:250px"></div>
+
+	<div div style="float: left" id="csvbox">
+	  <input type="file" id="csvfile1" name="uploadCSV1" onchange="loadFile1()"/>
+	</div>
+	<br>
+	<div id="area1"></div>
+  </body>
+</html>
+
+<!-- Le javascript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="simpleSlider.js"></script>
+<script>
+ var reader = new FileReader(); 
+ var reader1 = new FileReader(); 
+ var d0;
+ var d1; 
+ var TokensGok = 0;
+ var maxRankLeft = 0;
+ var maxRankRight = 0;
+ var TokensModern = 0;
+ var myMap = new Map();
+ var margin, marginMid,x, y, xM, xR, yR, svgSlider, color, svg, svgM, svgR ;
+ var title1 = "Pre-Modern Sample";
+ var title2 = "Modern Sample";
+
+ function redrawVis(){
+  if (d0 != null && d1 != null){
+    svg.selectAll("*").remove();
+    svgM.selectAll("*").remove();
+    svgR.selectAll("*").remove();
+    svgSlider.selectAll("*").remove();
+
+    DrawVis(d0,d1);
+  }
+  else{
+    alert("Please Select CSV's")
+  }
+ }
+
+  function loadFile() {    
+        var file = document.querySelector('input[id=csvfile]').files[0];    
+        reader.addEventListener("load", parseFile, false);  
+        if (file) {
+          reader.readAsText(file);
+        }      
+      }
+      
+      function parseFile(){
+         d0 = d3.csv.parse(reader.result, function(d){
+          return d;   
+        });
+         TokensGok =0;
+         maxRankLeft=0;
+          d0.forEach(function(d) {
+            maxRankLeft++;
+            d.Frequency = +d.Frequency;
+            if(!isNaN(d.Frequency))
+             TokensGok += d.Frequency;
+            d.Word = d.Type;
+            d.Type = maxRankLeft;
+          });
+       }
+
+
+      function loadFile1() {    
+        var file = document.querySelector('input[id=csvfile1]').files[0];      
+        reader1.addEventListener("load", parseFile1, false); 
+        if (file) {
+          reader1.readAsText(file);
+        }      
+      }
+      
+      function parseFile1(){
+         d1 = d3.csv.parse(reader1.result, function(d){
+          return d;   
+        });
+         myMap = new Map();
+         TokensModern = 0;
+         maxRankRight = 0;
+         d1.forEach(function(d) {
+            maxRankRight++;
+            d.Frequency = +d.Frequency;
+           if(!isNaN(d.Frequency))
+              TokensModern += d.Frequency;
+            d.Word = d.Type;
+            d.Type = maxRankRight;
+            myMap.set(d.Word, [d.Frequency,d.Type]);          
+          });
+
+       }
+
+setup();
+
+d3.csv("permoderngok.csv", function(error, data) {
+  data.forEach(function(d) {
+    maxRankLeft++;
+    d.Frequency = +d.Frequency;
+    if(!isNaN(d.Frequency))
+      TokensGok += d.Frequency;
+    d.Word = d.Type;
+    d.Type = maxRankLeft;
+  });
+
+d3.csv("moderngokComfre.csv", function(error, dataRight) {
+
+  dataRight.forEach(function(d) {
+    maxRankRight++;
+    d.Frequency = +d.Frequency;
+    if(!isNaN(d.Frequency))
+      TokensModern += d.Frequency;
+    d.Word = d.Type;
+    d.Type = maxRankRight;
+    myMap.set(d.Word, [d.Frequency,d.Type]);
+  });
+
+  DrawVis(data,dataRight);
+  });
+});
+
+function setup(){
+ margin = {top: 10, right: 45, bottom: 30, left: 45},
+    width = 350 - margin.left - margin.right,
+    height = 800 - margin.top - margin.bottom;
+
+ marginMid = {top: 10, right: 0, bottom: 30, left: 0},
+    widthMid = 350 - marginMid.left - marginMid.right,
+    heightMid = 800 - marginMid.top - marginMid.bottom;
+
+
+ x = d3.scale.log()
+    .range([ width,0]);
+
+ y = d3.scale.log()
+    .range([0,height]);
+
+ xM = d3.scale.linear()
+    .domain([0,10])
+    .range([0, widthMid]);
+
+ xR = d3.scale.log()
+    .range([0,width]);     
+
+ yR = d3.scale.log()
+    .range([0,height]);
+
+ svgSlider = d3.select("#area1").append("svg").attr("width", 1050).attr("height", 60),
+        slider1 = new simpleSlider(0),
+        slider2 = new simpleSlider(1)
+        slider3 = new simpleSlider(2),
+        slider4 = new simpleSlider(1);
+
+
+
+ color = d3.scale.category10();
+
+ svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 )
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text(title1);
+
+ svgM = d3.select("body").append("svg")
+    .attr("width", widthMid + marginMid.left + marginMid.right)
+    .attr("height", height + marginMid.top + marginMid.bottom)
+  .append("g")
+    .attr("transform", "translate(" + marginMid.left + "," + marginMid.top + ")");
+
+
+ svgR = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svgR.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 +5)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text(title2);
+
+}
+
+
+function DrawVis(data,dataRight){
+
+svgSlider.append('g').append("foreignObject")
+      .attr("x", 40)
+      .attr("y", 10)
+      .attr("width",200 )
+      .attr("height", 20)
+      .html(function(d) {
+        return '<input id="SearchBox" type="text" placeholder ="Search words seperated by commas" value="" />'
+      }).attr("width", 200)
+      .attr("height", 20)
+      .attr("id","nValue");
+
+  x.domain(d3.extent(data, function(d) { return d.Frequency; })).nice();
+  xR.domain(d3.extent(dataRight, function(d) { return d.Frequency; })).nice();
+  y.domain(d3.extent(data, function(d) { return d.Type; })).nice();
+  yR.domain(d3.extent(dataRight, function(d) { return d.Type; })).nice();
+
+
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom")
+      .ticks(0, ".1s");
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("right")
+      .ticks(0, ".1s");
+
+  var yAxisR = d3.svg.axis()
+      .scale(yR)
+      .orient("left")
+      .ticks(0, ".1s");
+
+  var xAxisR = d3.svg.axis()
+      .scale(xR)
+      .orient("bottom")
+      .ticks(0, ".1s");
+
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+      .append("text")
+        .attr("class", "label")
+        .attr("x", width)
+        .attr("y", -6)
+        .style("text-anchor", "end")
+        .text("Word Count");
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .attr("transform", "translate(" + width + ",0 )")
+        .call(yAxis)
+      .append("text")
+        .attr("class", "label")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -12)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Word Rank")
+
+
+   var lineFunction = d3.svg.line()
+                          .x(function(d) { return x(d.Frequency); })
+                          .y(function(d) { return y(d.Type); })
+                           .interpolate("cardinal");
+
+       svg.append("path")
+       .attr("d", lineFunction(data))
+                            .attr("stroke", function(d) { return color(4); })
+                            .attr("stroke-width", 2)
+                            .attr("fill", "none");
+
+
+  var valueline = d3.svg.line()
+      .x(function(d) { return d.x; })
+      .y(function(d) { return d.y; });
+
+    data.forEach(function(d) {     
+        var relatedObject = myMap.get(d.Word);
+        if (relatedObject == null){
+            d.Frequency1 = 0;
+            d.Rank = maxRankRight;
+        }else{
+          d.Frequency1 = relatedObject[0];
+          d.Rank = relatedObject[1];
+        }  
+        d.diff = (y(d.Type)>yR(d.Rank)) ?  y(d.Type) - yR(d.Rank) :  yR(d.Rank) - y(d.Type) ;
+      });
+
+data = data.filter(function(d){
+        if(isNaN(d.Frequency)){
+            return false;
+        }
+        return true;
+    });
+
+dataRight = dataRight.filter(function(d){
+        if(isNaN(d.Frequency)){
+            return false;
+        }
+        return true;
+    });
+  data = data.sort(function(x, y){
+     return d3.descending(x.diff, y.diff);
+  });
+
+
+  i=0;
+
+  data.forEach(function(d) {
+        i++;
+        d.order = i;
+      });
+
+
+    var max = d3.max(data, function(d) { return Math.abs(d.diff);} );
+
+    var lines = svgM.selectAll(".line")
+        .data(data)
+        .enter().append("g")
+          .attr("class", "lines");
+
+        lines.append("path")
+            .attr("class", "line")
+            .attr("d", function(d) { return valueline([ { "x": 75,   "y": y(d.Type)},  { "x": 273,  "y": yR(d.Rank)} ]);} )
+            .attr("stroke-width", 2.2)
+            .attr("stroke", function(d) {  if (y(d.Type)>=yR(d.Rank)) return color(3);; return color(4); ;})
+            .append("svg:title")
+               .text( function(d) { return" Freq A: " + Math.round(1000000*(d.Frequency/(TokensGok*1.0)))/10000 +"%    Freq B: " + Math.round(1000000*(d.Frequency1/(TokensModern*1.0)))/10000 + "%    \""+d.Word+"\"" });
+
+        lines.append("text")
+               .attr("y", function(d) { if (y(d.Type)>=yR(d.Rank)) return yR(d.Rank);; return y(d.Type); ; })
+                  .attr("x", function(d) {  if (y(d.Type)>=yR(d.Rank)) return 278;; return 0; ;})
+                   .text( function (d) { return d.Word})
+                   .attr("font-family", "sans-serif")
+                   .attr("font-size", "10px")
+                   .attr("fill", "black");
+
+  var NotTopL = lines.filter(function(d){
+          if(Math.abs(d.diff) >= 0 * max && Math.abs(d.diff) <= max){
+              return false;
+          }
+          return true;
+      });
+
+   NotTopL.style("visibility", "hidden");
+       
+
+  var blueLines = lines.filter(function(d){
+          if( y(d.Type) >= yR(d.Rank) ){
+              return false;
+          }
+          return true;
+      });
+
+  var orangeLines = lines.filter(function(d){
+          if( y(d.Type) < yR(d.Rank) ){
+              return false;
+          }
+          return true;
+      });
+
+  d3.select("#nValue").on("input", function() {
+    var words = document.getElementById("SearchBox").value;
+    var wordsList = words.split(",");
+    var regx = "";
+    
+    for (var i = 0; i < wordsList.length; i++) {
+      if(i ===0 )
+        regx = regx + "(^|\W)"+wordsList[i] + "\\w*"
+      else
+        regx = regx + "|" + "(^|\W)"+ wordsList[i] + "\\w*" 
+
+    }
+    var patt = new RegExp(regx);
+    
+    blueLines.filter(function (d) { return !patt.test(d.Word); })
+        .style("visibility", "hidden");
+
+    blueLines.filter(function (d) { return patt.test(d.Word); })
+         .style("visibility", "visible");
+      
+    orangeLines.filter(function (d) { return !patt.test(d.Word); })
+        .style("visibility", "hidden");
+    orangeLines.filter(function (d) { return patt.test(d.Word); })
+       .style("visibility", "visible");
+  });
+
+       slider1.width(434).x(308).y(10).value(0.0001).event(function(){
+          blueLines.filter(function (d) { return ((Math.abs(d.diff) < max * slider1.value()) || (Math.abs(d.diff) > max * slider2.value())); })
+            .style("visibility", "hidden");
+          blueLines.filter(function (d) { return (Math.abs(d.diff) >= max * slider1.value()) && (Math.abs(d.diff) <= max * slider2.value()); })
+            .style("visibility", "visible");
+      });
+
+       slider2.width(434).x(308).y(10).value(1.0).event(function(){
+          blueLines.filter(function (d) { return ((Math.abs(d.diff) < max * slider1.value()) || (Math.abs(d.diff) > max * slider2.value())); })
+            .style("visibility", "hidden");
+          blueLines.filter(function (d) { return (Math.abs(d.diff) >= max * slider1.value()) && (Math.abs(d.diff) <= max * slider2.value()); })
+            .style("visibility", "visible");
+      });
+
+
+     slider3.width(434).x(308).y(40).value(0.0001).event(function(){
+          orangeLines.filter(function (d) { return ((Math.abs(d.diff) < max * slider3.value()) || (Math.abs(d.diff) > max * slider4.value())); })
+            .style("visibility", "hidden");
+          orangeLines.filter(function (d) { return (Math.abs(d.diff) >= max * slider3.value()) && (Math.abs(d.diff) <= max * slider4.value()); })
+            .style("visibility", "visible");
+      });
+
+      slider4.width(434).x(308).y(40).value(1.0).event(function(){
+          orangeLines.filter(function (d) { return ((Math.abs(d.diff) < max * slider3.value()) || (Math.abs(d.diff) > max * slider4.value())); })
+            .style("visibility", "hidden");
+          orangeLines.filter(function (d) { return (Math.abs(d.diff) >= max * slider3.value()) && (Math.abs(d.diff) <= max * slider4.value()); })
+            .style("visibility", "visible");
+      });
+
+      svgSlider.call(slider1);
+      svgSlider.call(slider2);
+      svgSlider.call(slider3);
+      svgSlider.call(slider4);
+
+    svgR.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxisR)
+      .append("text")
+        .attr("class", "label")
+        .attr("x", width-2)
+        .attr("y", -6)
+        .style("text-anchor", "end")
+        .text("Word Count");
+
+    svgR.append("g")
+        .attr("class", "y axis")
+        .call(yAxisR)
+      .append("text")
+        .attr("class", "label")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Word Rank");
+
+
+
+   var lineFunctionR = d3.svg.line()
+                          .x(function(d) { return xR(d.Frequency); })
+                          .y(function(d) { return yR(d.Type); })
+                           .interpolate("basis");
+
+    svgR.append("path")
+       .attr("d", lineFunctionR(dataRight))
+                            .attr("stroke", function(d) { return color(3); })
+                            .attr("stroke-width", 2)
+                            .attr("fill", "none");
+
+}
+</script>
+
+
+

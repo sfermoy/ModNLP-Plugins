@@ -1,0 +1,3 @@
+If you are developing plugins without a modnlp/ source tree, please
+get idx.jar and teccli.jar from the latest modnlp distribution and
+place in this directory alongsid the 3rdparty libraries.
