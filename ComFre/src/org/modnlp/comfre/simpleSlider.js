@@ -19,8 +19,8 @@ function simpleSlider (showaxis ) {
             .style({"stroke": "#51CB3F",
                     "stroke-linecap": "round",
                     "stroke-width": 6 })
-            .style("stroke", function(d) {  if (showaxis === 0) return "#ECECEC"; return "#51CB3F"; ;}) //"#51CB3F"
-            .style("visibility", function(d) {  if (showaxis === 0) return "visable"; return "hidden"; ;});
+            .style("stroke", function(d) {  if (showaxis === 0) return "#ECECEC"; if (showaxis === 2) return "#ECECEC"; return "#51CB3F"; }) //"#51CB3F"
+            .style("visibility", function(d) {  if (showaxis === 0) return "visable"; if (showaxis === 2) return "visable"; return "hidden"; });
 
         //Line to show the remaining value
         var emptyLine = selection.append("line")

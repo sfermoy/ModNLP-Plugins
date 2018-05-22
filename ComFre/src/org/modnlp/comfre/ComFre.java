@@ -15,19 +15,22 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.modnlp.ComFre;
-import com.teamdev.jxbrowser.chromium.swing.BrowserView;
-import com.teamdev.jxbrowser.chromium.Browser;
-import com.teamdev.jxbrowser.chromium.BrowserContext;
-import com.teamdev.jxbrowser.chromium.BrowserPreferences;
-import com.teamdev.jxbrowser.chromium.ProtocolHandler;
-import com.teamdev.jxbrowser.chromium.ProtocolService;
-import com.teamdev.jxbrowser.chromium.URLRequest;
-import com.teamdev.jxbrowser.chromium.URLResponse;
-import java.awt.BorderLayout;
-import java.io.DataInputStream;
-import java.io.InputStream;
-import java.net.URL;
+package org.modnlp.comfre;
+
+import java.io.File;
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import javafx.stage.FileChooser;
+import javafx.stage.WindowEvent;
 import javax.swing.JFrame;
 import modnlp.tec.client.ConcordanceBrowser;
 import modnlp.tec.client.Plugin;
@@ -40,37 +43,84 @@ public class ComFre extends JFrame implements Plugin{
   }
     @Override
     public void activate() {
-        //Need to switch off to initally load files from csvs
-        BrowserPreferences.setChromiumSwitches( "--disable-web-security", "--allow-file-access-from-files");
-        Browser browser = new Browser();
-        BrowserView view = new BrowserView(browser);
-
-        JFrame frame = new JFrame();
-        frame.add(view, BorderLayout.CENTER);
-        frame.setSize(1200, 1000);
+        final JFXPanel fxPanel = new JFXPanel();
+        JFrame frame = this;
+        frame.add(fxPanel);
+        frame.setSize(1100,1000);
         frame.setVisible(true);
-        
-        BrowserContext browserContext = browser.getContext();
-        ProtocolService protocolService = browserContext.getProtocolService();
-        protocolService.setProtocolHandler("jar", new ProtocolHandler() {
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        Platform.runLater(new Runnable() {
             @Override
-            public URLResponse onRequest(URLRequest request) {
-                try {
-                    URLResponse response = new URLResponse();
-                    URL path = new URL(request.getURL());
-                    InputStream inputStream = path.openStream();
-                    DataInputStream stream = new DataInputStream(inputStream);
-                    byte[] data = new byte[stream.available()];
-                    stream.readFully(data);
-                    response.setData(data);
-                    response.getHeaders().setHeader("Content-Type", "text/html");
-                    return response;
-                } catch (Exception ignored) {}
-                return null;
+            public void run() {
+                initFX(fxPanel);
+            }
+       });
+    } 
+    
+     private static void initFX(JFXPanel fxPanel) {
+        // This method is invoked on the JavaFX thread
+        Scene scene = createScene();
+        fxPanel.setScene(scene);
+    }
+     
+    private static Scene createScene() {
+        WebView view = new WebView();
+        WebEngine engine = view.getEngine();
+        engine.setJavaScriptEnabled(true);
+        
+        VBox root = new VBox();
+        
+        HBox hbox = new HBox(300);
+        hbox.setPadding(new Insets(12, 12, 12, 100));
+        Button btn = new Button();
+        btn.setText("Choose Left File");
+             
+        btn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("Open Resource File");
+                File file =fileChooser.showOpenDialog(null);
+                engine.executeScript("file1 = \""+file.getAbsolutePath()+"\"; title1 = \"" +file.getName() + "\";");           
             }
         });
+        
+        Button btn1 = new Button();
+        btn1.setText("Choose Right File");
+        
+        btn1.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("Open Resource File");
+                File file =fileChooser.showOpenDialog(null);
+                engine.executeScript("file2 = \""+file.getAbsolutePath()+"\"; title2 = \"" +file.getName() + "\";");
+            }
+        });
+        
+        Button btnDraw = new Button();
+        btnDraw.setText("ReDraw");
+        
+        btnDraw.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                engine.executeScript("redrawVis();");
+            }
+        });
+        
+        hbox.getChildren().addAll(btn,btnDraw,btn1);     
+        root.getChildren().add(hbox);
+                
+        engine.load(ComFre.class.getResource("ComFre.html").toString());
+        VBox.setVgrow(view, javafx.scene.layout.Priority.ALWAYS);
+        
+        Scene scene = new Scene(root, 1100, 1000);
+        root.getChildren().add(view);
+        return (scene);
+    }
 
-        //load html file in same folder as class
-        browser.loadURL(ComFre.class.getResource("ComFre.html").toString());
-    }    
+
+
+  
 }

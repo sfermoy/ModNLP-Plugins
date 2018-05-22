@@ -9,7 +9,7 @@
 
     <style type="text/css">
       body {
-        padding-top: 60px;
+        padding-top: 20px;
         padding-bottom: 40px;
       }
     </style>
@@ -39,9 +39,9 @@
 </head>
 
 <body>
-	<div class="horizontalgap" style="width:90px"></div>
+	<!-- <div class="horizontalgap" style="width:90px"></div>
 	<div div style="float: left" id="csvbox" >
-		<input type="file" id="csvfile" name="uploadCSV" onchange="loadFile()" placeholder="Pre-Modern Sample"  />
+		<input type="file" id="csvfile" name="uploadCSV" onchange="loadFile()" />
 	</div>
 
 	<div class="horizontalgap" style="width:160px"></div>
@@ -53,19 +53,25 @@
 	<div div style="float: left" id="csvbox">
 	  <input type="file" id="csvfile1" name="uploadCSV1" onchange="loadFile1()"/>
 	</div>
-	<br>
-	<div id="area1"></div>
+	<br> -->
+	<div id="area1">
+		<input id="SearchBox" type="text" placeholder ="Search words seperated by commas" value="" />
+	</div>
   </body>
 </html>
 
 <!-- Le javascript
 ================================================== -->
-<!-- Placed at the end of the document so the pages load faster -->
-<script src="https://d3js.org/d3.v3.min.js"></script>
-<script src="simpleSlider.js"></script>
-<script>
- var reader = new FileReader(); 
- var reader1 = new FileReader(); 
+<!--
+
+ Placed at the end of the document so the pages load faster -->
+ <script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
+<script type="text/javascript" src="simpleSlider.js"></script>
+<script type='text/javascript'>
+
+ var file1 ="permoderngok.csv";
+ var file2 ="moderngokComfre.csv";
  var d0;
  var d1; 
  var TokensGok = 0;
@@ -78,74 +84,44 @@
  var title2 = "Modern Sample";
 
  function redrawVis(){
-  if (d0 != null && d1 != null){
     svg.selectAll("*").remove();
     svgM.selectAll("*").remove();
     svgR.selectAll("*").remove();
     svgSlider.selectAll("*").remove();
 
-    DrawVis(d0,d1);
-  }
-  else{
-    alert("Please Select CSV's")
-  }
- }
+	d3.csv(file1, function(error, data) {
+		TokensGok = 0;
+	    maxRankLeft = 0;
+	  data.forEach(function(d) {
+	    maxRankLeft++;
+	    d.Frequency = +d.Frequency;
+	    if(!isNaN(d.Frequency))
+	      TokensGok += d.Frequency;
+	    d.Word = d.Type;
+	    d.Type = maxRankLeft;
+	  });
 
-  function loadFile() {    
-        var file = document.querySelector('input[id=csvfile]').files[0];    
-        reader.addEventListener("load", parseFile, false);  
-        if (file) {
-          reader.readAsText(file);
-        }      
-      }
-      
-      function parseFile(){
-         d0 = d3.csv.parse(reader.result, function(d){
-          return d;   
-        });
-         TokensGok =0;
-         maxRankLeft=0;
-          d0.forEach(function(d) {
-            maxRankLeft++;
-            d.Frequency = +d.Frequency;
-            if(!isNaN(d.Frequency))
-             TokensGok += d.Frequency;
-            d.Word = d.Type;
-            d.Type = maxRankLeft;
-          });
-       }
+	d3.csv(file2, function(error, dataRight) {
+	    TokensModern = 0;
+	    maxRankRight = 0;
+	  dataRight.forEach(function(d) {
+	    maxRankRight++;
+	    d.Frequency = +d.Frequency;
+	    if(!isNaN(d.Frequency))
+	      TokensModern += d.Frequency;
+	    d.Word = d.Type;
+	    d.Type = maxRankRight;
+	    myMap.set(d.Word, [d.Frequency,d.Type]);
+	  });
 
-
-      function loadFile1() {    
-        var file = document.querySelector('input[id=csvfile1]').files[0];      
-        reader1.addEventListener("load", parseFile1, false); 
-        if (file) {
-          reader1.readAsText(file);
-        }      
-      }
-      
-      function parseFile1(){
-         d1 = d3.csv.parse(reader1.result, function(d){
-          return d;   
-        });
-         myMap = new Map();
-         TokensModern = 0;
-         maxRankRight = 0;
-         d1.forEach(function(d) {
-            maxRankRight++;
-            d.Frequency = +d.Frequency;
-           if(!isNaN(d.Frequency))
-              TokensModern += d.Frequency;
-            d.Word = d.Type;
-            d.Type = maxRankRight;
-            myMap.set(d.Word, [d.Frequency,d.Type]);          
-          });
-
-       }
+  	DrawVis(data,dataRight);
+	    });
+	});
+}
 
 setup();
 
-d3.csv("permoderngok.csv", function(error, data) {
+d3.csv(file1, function(error, data) {
   data.forEach(function(d) {
     maxRankLeft++;
     d.Frequency = +d.Frequency;
@@ -155,7 +131,7 @@ d3.csv("permoderngok.csv", function(error, data) {
     d.Type = maxRankLeft;
   });
 
-d3.csv("moderngokComfre.csv", function(error, dataRight) {
+d3.csv(file2, function(error, dataRight) {
 
   dataRight.forEach(function(d) {
     maxRankRight++;
@@ -213,13 +189,7 @@ function setup(){
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-svg.append("text")
-        .attr("x", (width / 2))             
-        .attr("y", 0 )
-        .attr("text-anchor", "middle")  
-        .style("font-size", "16px") 
-        .style("text-decoration", "underline")  
-        .text(title1);
+
 
  svgM = d3.select("body").append("svg")
     .attr("width", widthMid + marginMid.left + marginMid.right)
@@ -234,6 +204,20 @@ svg.append("text")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+return 1;
+}
+
+
+function DrawVis(data,dataRight){
+
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0+5 )
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text(title1);
+
 svgR.append("text")
         .attr("x", (width / 2))             
         .attr("y", 0 +5)
@@ -242,21 +226,15 @@ svgR.append("text")
         .style("text-decoration", "underline")  
         .text(title2);
 
-}
-
-
-function DrawVis(data,dataRight){
-
-svgSlider.append('g').append("foreignObject")
-      .attr("x", 40)
-      .attr("y", 10)
-      .attr("width",200 )
-      .attr("height", 20)
-      .html(function(d) {
-        return '<input id="SearchBox" type="text" placeholder ="Search words seperated by commas" value="" />'
-      }).attr("width", 200)
-      .attr("height", 20)
-      .attr("id","nValue");
+// svgSlider.append('g').append("foreignObject")
+//       .attr("x", 40)
+//       .attr("y", 10)
+//       .attr("width",200 )
+//       .attr("height", 20)
+//       .html("<input id=\"SearchBox\" type=\"text\" placeholder =\"Search words seperated by commas\" value=\"\" />")
+//       .attr("width", 200)
+//       .attr("height", 20)
+//       .attr("id","nValue");
 
   x.domain(d3.extent(data, function(d) { return d.Frequency; })).nice();
   xR.domain(d3.extent(dataRight, function(d) { return d.Frequency; })).nice();
@@ -410,7 +388,7 @@ dataRight = dataRight.filter(function(d){
           return true;
       });
 
-  d3.select("#nValue").on("input", function() {
+  d3.select("#SearchBox").on("input", function() {
     var words = document.getElementById("SearchBox").value;
     var wordsList = words.split(",");
     var regx = "";
