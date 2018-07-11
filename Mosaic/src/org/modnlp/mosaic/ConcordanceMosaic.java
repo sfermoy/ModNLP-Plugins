@@ -499,7 +499,7 @@ public class ConcordanceMosaic extends JFrame
           stopword_column_length = 0;
           for (int x = 0; x < column.length; x++) {
             Node n = graph.addNode();
-            n.set("word", column[x]);
+            n.set("word", column[x].replace("-", "-\n"));
             n.set("add1", 0);
             n.set("isStopwordView", false);
             n.set("makeInvis", false);
@@ -880,7 +880,7 @@ public class ConcordanceMosaic extends JFrame
       e.printStackTrace();
     }
   }
-  
+ 
   private int getWordCount(String word){
     int wc = wordCounts.getOrDefault(word, -1);    
     // wc can never be 0, since the word appears in the concordance list!
@@ -892,4 +892,5 @@ public class ConcordanceMosaic extends JFrame
   }
   
 }
+
 
