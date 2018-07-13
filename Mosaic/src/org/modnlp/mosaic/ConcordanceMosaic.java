@@ -179,14 +179,15 @@ public class ConcordanceMosaic extends JFrame
     pas.add(relFrequencyButton);
     pas.add(relFreqPosButton);
     frequencyButton.setSelected(true);
+    final JFrame window = this;
    this.getRootPane().addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
                 Component c =(Component)e.getSource();
-                System.out.println(c.getWidth());
-                System.out.println(c.getHeight());
                 totalWidth = (c.getWidth()-5)/9;
                 totalHeigth = c.getHeight()-40;
-                MakeMosaic();
+                if( window.getExtendedState() != JFrame.MAXIMIZED_BOTH){
+                    MakeMosaic();
+                }
             }
         });
         
