@@ -45,6 +45,8 @@ public class MosaicLayout extends Layout {
 
     protected int rows;
     protected int cols;
+    int width = 98;
+    int heigth =450;
    
     
     /**
@@ -91,11 +93,11 @@ public class MosaicLayout extends Layout {
             
             if(previous_column<(Integer)item.get("column")){
                 if(!isRelFreq){
-                if(height_used<450){
+                if(height_used < heigth){
                     int totalToAdd = 0;
                     int itemNumber = 0;
                     int amountToAdd = 1;
-                    while(height_used < 450){
+                    while(height_used < heigth){
                         VisualItem modify = items_in_coulmn.get(itemNumber);
                         setY(modify, null, modify.getY() + (amountToAdd*itemNumber));
                         modify.set("add1", amountToAdd);
@@ -118,7 +120,7 @@ public class MosaicLayout extends Layout {
             }
             
             item.setVisible(true);
-            int xoffset = 98*((Integer)item.get("column"));
+            int xoffset = width*((Integer)item.get("column"));
             double x = bx + (double)xoffset;
            
             
@@ -126,18 +128,18 @@ public class MosaicLayout extends Layout {
            
             setX(item,null,x);
             setY(item,null,y);
-            height_used +=  Math.floor((450 )* ((Double) item.get("frequency")));
+            height_used +=  Math.floor((heigth )* ((Double) item.get("frequency")));
             previous_column=(Integer)item.get("column");
             items_in_coulmn.add(item);
             
         }
         // for final column should change as we are repeating code
-        if(height_used<450){
+        if(height_used < heigth){
             if(!isRelFreq){
                     int totalToAdd=0;
                     int itemNumber=0;
                     int amountToAdd =1;
-                    while(height_used<450){
+                    while(height_used < heigth){
                         VisualItem modify = items_in_coulmn.get(itemNumber);
                         setY(modify,null,modify.getY()+(amountToAdd*itemNumber));
                         modify.set("add1",amountToAdd);
@@ -198,6 +200,7 @@ public class MosaicLayout extends Layout {
     }
     
 } // end of class GridLayout
+
 
 
 

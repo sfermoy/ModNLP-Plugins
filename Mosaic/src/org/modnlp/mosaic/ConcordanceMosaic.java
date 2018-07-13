@@ -59,12 +59,12 @@ import prefuse.util.PrefuseLib;
 import prefuse.visual.VisualItem;
 import prefuse.visual.expression.InGroupPredicate;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PipedReader;
-import java.io.PipedWriter;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import prefuse.action.distortion.Distortion;
 import prefuse.controls.AnchorUpdateControl;
@@ -72,10 +72,7 @@ import prefuse.data.tuple.TupleSet;
 import prefuse.render.LabelRenderer;
 import java.net.URL;
 import java.text.NumberFormat;
-import java.util.Arrays;
 import javax.swing.JToggleButton;
-import modnlp.idx.headers.HeaderDBManager;
-import modnlp.tec.client.plugin.FqListBrowser;
 
 /**
  *
@@ -124,6 +121,9 @@ public class ConcordanceMosaic extends JFrame
   private BufferedReader input;
   private Map<String, Integer> wordCounts = null;
   private String currentCorpusAddress = null;
+  
+  private int totalHeigth = 450;
+  private int totalWidth =98;
   
   public ConcordanceMosaic() {
     thisFrame = this;
@@ -179,6 +179,18 @@ public class ConcordanceMosaic extends JFrame
     pas.add(relFrequencyButton);
     pas.add(relFreqPosButton);
     frequencyButton.setSelected(true);
+   this.getRootPane().addComponentListener(new ComponentAdapter() {
+            public void componentResized(ComponentEvent e) {
+                Component c =(Component)e.getSource();
+                System.out.println(c.getWidth());
+                System.out.println(c.getHeight());
+                totalWidth = (c.getWidth()-5)/9;
+                totalHeigth = c.getHeight()-40;
+                MakeMosaic();
+            }
+        });
+        
+ 
     
     frequencyButton.addActionListener(new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -367,6 +379,8 @@ public class ConcordanceMosaic extends JFrame
         graph.addColumn("sentences", ArrayList.class);
         graph.addColumn("color", Integer.class);
         graph.addColumn("add1", Integer.class);
+        graph.addColumn("height", Integer.class);
+        
         sentenceIndexToVisualitems = new HashMap<Integer, ArrayList<VisualItem>>();
         Tokeniser ss;
         int la = parent.getLanguage();
@@ -503,6 +517,7 @@ public class ConcordanceMosaic extends JFrame
             n.set("add1", 0);
             n.set("isStopwordView", false);
             n.set("makeInvis", false);
+            n.set("height", 0);
             if (is_rel_freq) {
               if (is_pos_freq) {
                 double val = Rel_freq_counter.get(column[x]);
@@ -656,7 +671,7 @@ public class ConcordanceMosaic extends JFrame
     setUpActions();
     setUpRenderers();
     Display d = new Display(vis);
-    d.setSize(885, 500); //885,450 use 500 to see extra
+    d.setSize((totalWidth*9)+5, totalHeigth+5); //885,450 use 500 to see extra
     
     //d.addControlListener(new DragControl());
     d.addControlListener(new PanControl(true));
@@ -675,8 +690,9 @@ public class ConcordanceMosaic extends JFrame
     vis.run("layout");
   }
   
-  public static void setUpRenderers() {
-    MosaicRenderer r = new MosaicRenderer(nrows, 450);
+  public void setUpRenderers() {
+    MosaicRenderer r = new MosaicRenderer(nrows, totalHeigth);
+    r.width = totalWidth;
     DefaultRendererFactory drf = new DefaultRendererFactory(r);
     LabelRenderer lalala = new LabelRenderer("word");
     
@@ -737,12 +753,15 @@ public class ConcordanceMosaic extends JFrame
     // the positions of the nodes.
     ActionList layout = new ActionList();
     MosaicLayout gl = new MosaicLayout("graph.nodes", nrows, 9);
+    gl.width = totalWidth;
+    gl.heigth=totalHeigth;
+    
     layout.add(gl);
     layout.add(new MosaicDecoratorLayout("boxlabel"));
 
     // fisheye distortion based on the current anchor location    
     ActionList distort = new ActionList();
-    dist = new MosaicDistortion(this);
+    dist = new MosaicDistortion(this,totalWidth,totalHeigth);
     distort.add(dist);
     distort.add(new RepaintAction());
     vis.putAction("distort", distort);

@@ -34,11 +34,11 @@ public class MosaicRenderer extends AbstractShapeRenderer
 	protected Rectangle2D m_box = new Rectangle2D.Double();
         protected int rows;
         protected int heigth;
-   
+        public int width = 98;
         
         public MosaicRenderer( int nrows, int nheigth) {
             rows=nrows;
-            heigth= 450;
+            heigth= nheigth;
         
        
     }
@@ -50,12 +50,14 @@ public class MosaicRenderer extends AbstractShapeRenderer
             double h=item.getSize();
             if(item.getSize()==1)
                 h= Math.floor(heigth* ((Double) item.get("frequency")));
+            item.set("height", (int)h);
             //adding 1 to boxes to correct heights of cols, calculated in layout
             int toAdd=(Integer)item.get("add1");
             h+= toAdd;
                 
-		m_box.setFrame(item.getX(), item.getY(),98,h);
+		m_box.setFrame(item.getX(), item.getY(),width,h);
 
 		return m_box;
 	}
 }
+

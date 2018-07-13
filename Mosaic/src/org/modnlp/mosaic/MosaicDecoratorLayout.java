@@ -28,19 +28,12 @@ public class MosaicDecoratorLayout extends Layout
             DecoratorItem decorator = (DecoratorItem)iter.next();
             VisualItem decoratedItem = decorator.getDecoratedItem();
             Rectangle2D bounds = decoratedItem.getBounds();
-            Double frq = (Double) decoratedItem.get("frequency");
-            if (frq > 0.05) {
-            decorator.setFont(FontLib.getFont("Tahoma", 16));
-        } else if (frq > 0.02) {
-            decorator.setFont(FontLib.getFont("Tahoma", 6));
-        }
-        else if (frq > 0.0045) {
-            decorator.setFont(FontLib.getFont("Tahoma", 2));
-        }
-        else{
-            decorator.setFont(FontLib.getFont("Tahoma", 0));
-        }
-            //if(decoratedItem.get("column")==4)
+            int frq = (int) decoratedItem.get("height");
+           
+            decorator.setFont(FontLib.getFont("Tahoma", Math.min(22,frq/2)));
+  
+            if((int)decoratedItem.get("column")==4)
+                decorator.setFont(FontLib.getFont("Tahoma", 16));
               //  decorator.setTextColor(ColorLib.color(java.awt.Color.WHITE));
             
             
@@ -52,3 +45,4 @@ public class MosaicDecoratorLayout extends Layout
         }
     }
 }
+

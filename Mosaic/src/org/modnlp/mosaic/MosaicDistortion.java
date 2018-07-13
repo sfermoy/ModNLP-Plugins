@@ -27,12 +27,14 @@ import prefuse.visual.VisualItem;
 
 public class MosaicDistortion extends Distortion {
     private ConcordanceMosaic themosaic = null;
-  
+    int height,width;
     
-    public MosaicDistortion(ConcordanceMosaic m) {
+    public MosaicDistortion(ConcordanceMosaic m,int twidth,int theight) {
         themosaic = m;
         this.m_distortX = false;
         this.m_distortY = false;
+        height = theight;
+        width = twidth;
     }
     
     public void run(double frac) {
@@ -87,7 +89,7 @@ public class MosaicDistortion extends Distortion {
             double ay = 0, ax = 400;
             //bbox.getHeight();
             //if visual item is rectangle not text.
-            if(x % 98 == 0){
+            if(x % width == 0){
                 //if mouse in window get the position
                   if ( anchor != null ) {
                      ay = anchor.getY();
@@ -112,7 +114,7 @@ public class MosaicDistortion extends Distortion {
                         }
                 // if anchor in column
                 if( ax > x){
-                        if(ax < (x + 98)){
+                        if(ax < (x + width)){
                             double totalOverlap = y;
                             //if a rectangle is selected and is small enough to need expansion
                             if ( sel != null )
@@ -222,25 +224,12 @@ public class MosaicDistortion extends Distortion {
                     DecoratorItem decorator = (DecoratorItem)item;
                     VisualItem decoratedItem = decorator.getDecoratedItem();
                     Rectangle2D bounds2 = decoratedItem.getBounds();
-                    Double frq = (Double) decoratedItem.get("frequency");
-                    if (frq > 0.05) {
-                    decorator.setFont(FontLib.getFont("Tahoma", 16));
-                    } else if (frq > 0.02) {
-                        decorator.setFont(FontLib.getFont("Tahoma", 6));
-                    }
-                    else if (frq > 0.0045) {
-                        decorator.setFont(FontLib.getFont("Tahoma", 2));
-                    }
-                    else{
-                        decorator.setFont(FontLib.getFont("Tahoma", 0));
-                    }
-                    if(decoratedItem.getSize() == 42)
-                        decorator.setFont(FontLib.getFont("Tahoma", 16));
-                    if(decoratedItem.getSize() == 27)
-                        decorator.setFont(FontLib.getFont("Tahoma", 10));
-                    if(decoratedItem.getSize() == 12)
-                        decorator.setFont(FontLib.getFont("Tahoma", 8));
+                    int frq = (int) decoratedItem.get("height");
+           
+                    decorator.setFont(FontLib.getFont("Tahoma", Math.min(22,frq/2)));
 
+                    if((int)decoratedItem.get("column")==4)
+                        decorator.setFont(FontLib.getFont("Tahoma", 16));
 
                     double x2 = bounds2.getCenterX();
                     double y2 = bounds2.getCenterY();
@@ -278,4 +267,5 @@ public class MosaicDistortion extends Distortion {
     
    
 } 
+
 
