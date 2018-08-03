@@ -17,6 +17,7 @@
  */
 package org.modnlp.comfre;
 
+import com.sun.javafx.application.PlatformImpl;
 import java.io.File;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
@@ -32,36 +33,46 @@ import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
 import javafx.stage.WindowEvent;
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 import modnlp.tec.client.ConcordanceBrowser;
 import modnlp.tec.client.Plugin;
 
 public class ComFre extends JFrame implements Plugin{
     ConcordanceBrowser parent =null;
+     private JFrame frame;
+    
     @Override
     public void setParent(Object p){
     parent = (ConcordanceBrowser)p;
+    frame = this;
   }
+    
     @Override
     public void activate() {
-        final JFXPanel fxPanel = new JFXPanel();
-        JFrame frame = this;
-        frame.add(fxPanel);
-        frame.setSize(1100,1000);
-        frame.setVisible(true);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                initFX(fxPanel);
-            }
-       });
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        this.setSize(1100,1000);
+        this.setVisible(true);
+        
+        
+        //swing run later thread
+        SwingUtilities.invokeLater(new Runnable() {  
+           public void run() { 
+               JFXPanel fxPanel = new JFXPanel();
+               initFX(fxPanel);
+               frame.add(fxPanel);       
+           }
+       });   
     } 
     
      private static void initFX(JFXPanel fxPanel) {
         // This method is invoked on the JavaFX thread
-        Scene scene = createScene();
-        fxPanel.setScene(scene);
+        //cannot run in swing enviornment
+          PlatformImpl.startup(
+            new Runnable() {
+                public void run() {
+                    Scene scene = createScene();
+                    fxPanel.setScene(scene);
+                }});
     }
      
     private static Scene createScene() {
@@ -124,3 +135,4 @@ public class ComFre extends JFrame implements Plugin{
 
   
 }
+
