@@ -238,8 +238,8 @@ svgR.append("text")
 
   x.domain(d3.extent(data, function(d) { return d.Frequency; })).nice();
   xR.domain(d3.extent(dataRight, function(d) { return d.Frequency; })).nice();
-  y.domain(d3.extent(data, function(d) { return d.Type; })).nice();
-  yR.domain(d3.extent(dataRight, function(d) { return d.Type; })).nice();
+  y.domain(d3.extent(data, function(d) { return d.Type; }));
+  yR.domain(d3.extent(dataRight, function(d) { return d.Type; }));
 
 
   var xAxis = d3.svg.axis()
