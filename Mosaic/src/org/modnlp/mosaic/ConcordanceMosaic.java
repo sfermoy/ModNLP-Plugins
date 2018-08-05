@@ -229,6 +229,7 @@ public class ConcordanceMosaic extends JFrame
             frequencyButton.setSelected(!is_rel_freq);
             relFrequencyButton.setSelected(is_rel_freq);
             stopwordFrequencyButton.setSelected(false);
+            filterStopwords = false;
             MakeMosaic();
           }
         });
@@ -243,6 +244,7 @@ public class ConcordanceMosaic extends JFrame
             frequencyButton.setSelected(false);
             relFrequencyButton.setSelected(false);
             stopwordFrequencyButton.setSelected(false);
+            filterStopwords = false;
             MakeMosaic();
           }
         });
@@ -479,11 +481,16 @@ public class ConcordanceMosaic extends JFrame
             if (counter.get(column[x]) < 2) {
               Rel_freq_counter.put(column[x], 0.0000000001);
             } else {
-              double temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
-              if (temp < 10000000.0) {
-                Rel_freq_counter.put(column[x], temp);
-              } else {
-                Rel_freq_counter.put(column[x], 0.0000000001);
+              if( filterStopwords ){
+                  Rel_freq_counter.put(column[x], (double) counter.get(column[x]));
+              }
+              else{
+                double temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
+                if (temp < 10000000.0) {
+                  Rel_freq_counter.put(column[x], temp);
+                } else {
+                  Rel_freq_counter.put(column[x], 0.0000000001);
+                }
               }
             }
             rel_column_length += Rel_freq_counter.get(column[x]);
@@ -554,13 +561,21 @@ public class ConcordanceMosaic extends JFrame
                   n.set("tooltip", 0.0000000001);
                   n.set("makeInvis", true);
                 } else {
-                  
-                  stopword_column_length += val;
-                  n.set("frequency", val);
-                  n.set("tooltip", val);
+                  if(counter.get(column[x]) < 3 && nrows>400){
+                    n.set("frequency", 0.0000000001);
+                    n.set("tooltip", 0.0000000001);
+                  }
+                  else{
+                    stopword_column_length += val;
+                    n.set("frequency", val);
+                    n.set("tooltip", val);
+                  }
                 }
               } else {
                 n.set("frequency", val);
+                 if (i == 4) {
+                    n.set("frequency", 1/(double)column.length);
+                 }
                 n.set("rel_freq", false);
                 n.set("tooltip", val);
                 n.set("tooltipLayoutSwitch", false);
@@ -581,6 +596,7 @@ public class ConcordanceMosaic extends JFrame
             if (i == 4) {
               color = 6;
               currentKeyword = column[x];
+              n.set("frequency", 1/(double)column.length);
             }
             n.set("color", color);
           }
@@ -645,7 +661,7 @@ public class ConcordanceMosaic extends JFrame
         if ((Integer) item.get("column") != 4) {
           item.set("frequency", value);
         } else {
-          item.set("frequency", (Double) item.get("tooltip") / keyHeight);
+         item.set("frequency",  item.get("frequency"));
         }
       }
       item.set("tooltip", value);
@@ -654,12 +670,17 @@ public class ConcordanceMosaic extends JFrame
   
   private void calculateStopwordFreqHeigths() {
     columnHeigths.set(4, 0.0);
+    //use this for absolute frequency unstreched
     double maxH = Collections.max(columnHeigths);
     for (Iterator iter = graph.nodes(); iter.hasNext();) {
       Node item = (Node) iter.next();
+      int col = (Integer) item.get("column");
+      //total heigth of column comment out and add line aboue for abs freq
+      double current = columnHeigths.get(col);
       double value = ((Double) item.get("tooltip"));
-      value = ((value) / (maxH));
-      if ((Integer) item.get("column") != 4) {
+      
+      value = (value *(1/maxH));
+      if (col != 4) {
         item.set("frequency", value);
       }
     }
@@ -912,5 +933,6 @@ public class ConcordanceMosaic extends JFrame
   }
   
 }
+
 
 
