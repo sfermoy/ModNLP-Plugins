@@ -228,8 +228,8 @@ public class MosaicDistortion extends Distortion {
            
                     decorator.setFont(FontLib.getFont("Tahoma", Math.min(22,frq/2)));
 
-                    if((int)decoratedItem.get("column")==4)
-                        decorator.setFont(FontLib.getFont("Tahoma", 16));
+//                    if((int)decoratedItem.get("column")==4)
+//                        decorator.setFont(FontLib.getFont("Tahoma", 16));
 
                     double x2 = bounds2.getCenterX();
                     double y2 = bounds2.getCenterY();
@@ -267,5 +267,6 @@ public class MosaicDistortion extends Distortion {
     
    
 } 
+
 
 

@@ -32,8 +32,8 @@ public class MosaicDecoratorLayout extends Layout
            
             decorator.setFont(FontLib.getFont("Tahoma", Math.min(22,frq/2)));
   
-            if((int)decoratedItem.get("column")==4)
-                decorator.setFont(FontLib.getFont("Tahoma", 16));
+//            if((int)decoratedItem.get("column")==4)
+//                decorator.setFont(FontLib.getFont("Tahoma", 16));
               //  decorator.setTextColor(ColorLib.color(java.awt.Color.WHITE));
             
             
@@ -45,4 +45,5 @@ public class MosaicDecoratorLayout extends Layout
         }
     }
 }
+
 

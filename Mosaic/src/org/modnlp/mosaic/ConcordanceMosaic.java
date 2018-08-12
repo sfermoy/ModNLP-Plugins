@@ -573,9 +573,9 @@ public class ConcordanceMosaic extends JFrame
                 }
               } else {
                 n.set("frequency", val);
-                 if (i == 4) {
-                    n.set("frequency", 1/(double)column.length);
-                 }
+//                 if (i == 4) {
+//                    n.set("frequency", 1/(double)column.length);
+//                 }
                 n.set("rel_freq", false);
                 n.set("tooltip", val);
                 n.set("tooltipLayoutSwitch", false);
@@ -596,7 +596,7 @@ public class ConcordanceMosaic extends JFrame
             if (i == 4) {
               color = 6;
               currentKeyword = column[x];
-              n.set("frequency", 1/(double)column.length);
+             // n.set("frequency", 1/(double)column.length);
             }
             n.set("color", color);
           }
@@ -661,7 +661,7 @@ public class ConcordanceMosaic extends JFrame
         if ((Integer) item.get("column") != 4) {
           item.set("frequency", value);
         } else {
-         item.set("frequency",  item.get("frequency"));
+          item.set("frequency", (Double) item.get("tooltip") / keyHeight);
         }
       }
       item.set("tooltip", value);
