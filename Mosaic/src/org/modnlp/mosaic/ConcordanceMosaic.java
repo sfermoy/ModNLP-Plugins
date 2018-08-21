@@ -383,6 +383,7 @@ public class ConcordanceMosaic extends JFrame
         graph.addColumn("color", Integer.class);
         graph.addColumn("add1", Integer.class);
         graph.addColumn("height", Integer.class);
+        graph.addColumn("count", Integer.class);
         
         sentenceIndexToVisualitems = new HashMap<Integer, ArrayList<VisualItem>>();
         Tokeniser ss;
@@ -478,7 +479,7 @@ public class ConcordanceMosaic extends JFrame
             }
             hm.put(column[x], corpus_word_count);
             // Set infrequent words to a very small value
-            if (counter.get(column[x]) < 2) {
+            if (counter.get(column[x]) < 2 || column[x].equalsIgnoreCase("*null*")) {
               Rel_freq_counter.put(column[x], 0.0000000001);
             } else {
               if( filterStopwords ){
@@ -526,6 +527,7 @@ public class ConcordanceMosaic extends JFrame
             n.set("isStopwordView", false);
             n.set("makeInvis", false);
             n.set("height", 0);
+            n.set("count", counter.get(column[x]));
             if (is_rel_freq) {
               if (is_pos_freq) {
                 double val = Rel_freq_counter.get(column[x]);
@@ -933,6 +935,5 @@ public class ConcordanceMosaic extends JFrame
   }
   
 }
-
 
 

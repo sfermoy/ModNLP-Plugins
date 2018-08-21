@@ -269,4 +269,3 @@ public class MosaicDistortion extends Distortion {
 } 
 
 
-

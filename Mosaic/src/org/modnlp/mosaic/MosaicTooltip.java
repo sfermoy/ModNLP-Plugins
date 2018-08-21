@@ -57,7 +57,7 @@ public class MosaicTooltip extends ControlAdapter implements Control {
 		{
                         //ToolTipManager.sharedInstance().setEnabled(true);
 			String text = ((String) item.get("word"));
-                        
+                        int count =((int) item.get("count"));
 			double fq = (Double) item.get("tooltip");
                         boolean layout = (boolean) item.get("tooltipLayoutSwitch");
 			fq = Math.round(fq*10000);
@@ -70,10 +70,10 @@ public class MosaicTooltip extends ControlAdapter implements Control {
                             double fq1 = (Double) item.get("tooltipFreq");
                             fq1 = Math.round(fq1*10000);
                             fq1 = fq1/100.0;
-                            d.setToolTipText("Text: \"" + text +"\" \n " +" Collocation Strength: " + fq +" Frequency: " + fq1);
+                            d.setToolTipText("Text: \"" + text +"\" \n " +" Collocation Strength: " + fq +" Frequency: " + fq1+" Count: " + count);
                         }
                         else
-                             d.setToolTipText("Text: \"" + text +"\" \n " +" Frequency: " + fq);
+                             d.setToolTipText("Text: \"" + text +"\" \n " +" Frequency: " + fq  +" Count: " + count);
                        
 		}
 	}
