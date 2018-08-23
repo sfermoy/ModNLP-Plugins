@@ -72,6 +72,7 @@ import prefuse.data.tuple.TupleSet;
 import prefuse.render.LabelRenderer;
 import java.net.URL;
 import java.text.NumberFormat;
+import javax.swing.JComboBox;
 import javax.swing.JToggleButton;
 
 /**
@@ -124,6 +125,8 @@ public class ConcordanceMosaic extends JFrame
   
   private int totalHeigth = 450;
   private int totalWidth =98;
+  private String[] metricStrings = { "Z-score", "Log-Log", "MI (EXP scale)", "MI3 (EXP scale)"};
+  private JComboBox metricList = new JComboBox(metricStrings);
   
   public ConcordanceMosaic() {
     thisFrame = this;
@@ -180,6 +183,10 @@ public class ConcordanceMosaic extends JFrame
     pas.add(relFreqPosButton);
     frequencyButton.setSelected(true);
     final JFrame window = this;
+    
+
+   // metricList.setSelectedIndex(0);
+
    this.getRootPane().addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
                 Component c =(Component)e.getSource();
@@ -192,7 +199,12 @@ public class ConcordanceMosaic extends JFrame
         });
         
  
-    
+   metricList.addActionListener(new ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+          MakeMosaic();
+        }
+      });
+
     frequencyButton.addActionListener(new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
           is_rel_freq = false;
@@ -202,6 +214,7 @@ public class ConcordanceMosaic extends JFrame
           relFrequencyButton.setSelected(is_rel_freq);
           stopwordFrequencyButton.setSelected(false);
           filterStopwords = false;
+          pas.remove(metricList);
           MakeMosaic();
         }
       });
@@ -215,6 +228,7 @@ public class ConcordanceMosaic extends JFrame
           relFrequencyButton.setSelected(false);
           stopwordFrequencyButton.setSelected(true);
           filterStopwords = true;
+          pas.remove(metricList);
           MakeMosaic();
         }
       });
@@ -230,6 +244,7 @@ public class ConcordanceMosaic extends JFrame
             relFrequencyButton.setSelected(is_rel_freq);
             stopwordFrequencyButton.setSelected(false);
             filterStopwords = false;
+            pas.add(metricList);
             MakeMosaic();
           }
         });
@@ -245,6 +260,7 @@ public class ConcordanceMosaic extends JFrame
             relFrequencyButton.setSelected(false);
             stopwordFrequencyButton.setSelected(false);
             filterStopwords = false;
+            pas.add(metricList);
             MakeMosaic();
           }
         });
@@ -357,6 +373,8 @@ public class ConcordanceMosaic extends JFrame
   }
   
   public void MakeMosaic() {
+      // collocation strength cutoff
+      double cutoff = 700;
     if (!parent.isStandAlone() &&
         ( wordCounts == null || !currentCorpusAddress.equals(getRemoteCorpusAddress())  ) )
       {
@@ -384,6 +402,8 @@ public class ConcordanceMosaic extends JFrame
         graph.addColumn("add1", Integer.class);
         graph.addColumn("height", Integer.class);
         graph.addColumn("count", Integer.class);
+        graph.addColumn("metric", String.class);
+
         
         sentenceIndexToVisualitems = new HashMap<Integer, ArrayList<VisualItem>>();
         Tokeniser ss;
@@ -479,15 +499,98 @@ public class ConcordanceMosaic extends JFrame
             }
             hm.put(column[x], corpus_word_count);
             // Set infrequent words to a very small value
-            if (counter.get(column[x]) < 2 || column[x].equalsIgnoreCase("*null*")) {
+            if ( column[x].equalsIgnoreCase("*null*")) {
+            //if (  column[x].equalsIgnoreCase("*null*")) {
               Rel_freq_counter.put(column[x], 0.0000000001);
             } else {
               if( filterStopwords ){
                   Rel_freq_counter.put(column[x], (double) counter.get(column[x]));
               }
               else{
-                double temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
-                if (temp < 10000000.0) {
+                  double temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
+
+                if(true){
+                    //Values for metric calculation
+                    double N =(total_no_tokens*1.0);
+                    double Fn = ( (nrows*1.0) );
+                    double Fnc = counter.get(column[x]);
+                    double Fc = (corpus_word_count*1.0);
+                    
+                    // Z score calculation
+                    double p = Fc / ( N - Fn );
+                    double E = p * Fn;
+                    //Yeats correction
+                    double zFnc = Fnc - 0.5;
+                    if(Fnc <E)
+                        zFnc =  Fnc + 0.5;
+                    double Z =  (zFnc -E) / Math.sqrt(E*(1-p));
+                    //default
+                    temp =Z;
+                    
+                    //Mutual information cubed calculation
+                    //Not taking log as a visua scaling choice. list order is still maintained
+                    double intermediate = (Math.pow(Fnc, 3)*N) / ( (Fnc + Fn)*( Fnc + Fc) );
+                    //double Mi3 = intermediate)/Math.log(2);
+                    double Mi3 = intermediate;
+                    
+                    //Mutual information calculation
+                    //Not taking log as a visua scaling choice. list order is still maintained
+                    intermediate = (Fnc*N)/(Fn*Fc);
+                    //double Mi =  Math.log(intermediate)/Math.log(2);
+                    double Mi =  intermediate;
+          
+                    // Observed expected metric calculation Visually the same as EXP(Mi)
+                    double ObservedExpected = (Fnc* (N-Fn))/ (Fn*Fc);
+                    
+                    //Kilgarif log-log score calculation
+                    double val1 = (Fnc*N) /(Fn*Fc);
+                    double A = Math.log(val1)/Math.log(2);
+                    double val2 = (Fnc);
+                    double B = Math.log(val2)/Math.log(2);
+                    double loglog = A*B;
+                    
+                    //log-likleyhood
+//                    double S = (Fnc + Math.log(Fnc))+(Fn + Math.log(Fn))+(Fc + Math.log(Fc))+(N + Math.log(N));
+//                    double D = ( (Fnc +Fn)* Math.log(Fnc+Fn) )+
+//                               ( (Fnc +Fc)* Math.log(Fnc+Fc) )+
+//                               ( (Fn + N)* Math.log(Fn + N) )+
+//                               ( (Fc + N)* Math.log(Fc + N) );
+//                    double A = (Fnc +Fn +Fn +N)* Math.log(D)
+                   
+
+                    //"Select metric
+                    String metric =(String) metricList.getSelectedItem();
+                    //System.out.println(metric);
+                    if(metric.equals("Modified MI")){
+                        temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
+                    }
+                    if(metric.equals("MI (EXP scale)"))
+                    {
+                        temp=Mi;
+                    }
+                    if(metric.equals("MI3 (EXP scale)"))
+                    {
+                        temp=Mi3;
+                    }
+                    if(metric.equals("Z-score"))
+                    {
+                        temp=Z;
+                    }
+                    if(metric.equals("Log-Log"))
+                    {
+                        temp=loglog;
+                    }
+//                    if(metric.equals("Obs/Exp"))
+//                    {
+//                        temp= ObservedExpected;
+//                    }
+                     
+                    if(temp <0)
+                        System.out.println(column[x]+" "+ temp);
+                    
+                }
+                
+                if (temp < 1000000000000.0 ) {
                   Rel_freq_counter.put(column[x], temp);
                 } else {
                   Rel_freq_counter.put(column[x], 0.0000000001);
@@ -528,9 +631,13 @@ public class ConcordanceMosaic extends JFrame
             n.set("makeInvis", false);
             n.set("height", 0);
             n.set("count", counter.get(column[x]));
+            n.set("metric", (String) metricList.getSelectedItem());
+            
+            
             if (is_rel_freq) {
               if (is_pos_freq) {
                 double val = Rel_freq_counter.get(column[x]);
+                //System.out.println(column[x]+  "  "+val);
                 n.set("frequency", val / rel_column_length);
                 n.set("tooltip", val);
                 n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
@@ -655,7 +762,7 @@ public class ConcordanceMosaic extends JFrame
     for (Iterator iter = graph.nodes(); iter.hasNext();) {
       Node item = (Node) iter.next();
       //String word = (String)item.get("word");
-      double value = (Double) item.get("tooltip");
+      double value = (Double) item.get("frequency");
       //scaled to be proportional to each word not column
       value = (value) / (maxH);
       //if local view
@@ -663,10 +770,10 @@ public class ConcordanceMosaic extends JFrame
         if ((Integer) item.get("column") != 4) {
           item.set("frequency", value);
         } else {
-          item.set("frequency", (Double) item.get("tooltip") / keyHeight);
+          item.set("frequency", (Double) item.get("frequency") / keyHeight);
         }
       }
-      item.set("tooltip", value);
+      //item.set("tooltip", value);
     }
   }
   
@@ -908,13 +1015,14 @@ public class ConcordanceMosaic extends JFrame
         if (row[0].equals("0")) {
           if (row[1].equals(modnlp.idx.database.Dictionary.TTOKENS_LABEL)) {
             notokens = (new Integer(row[2])).intValue();
-            total_no_tokens = notokens;
+            total_no_tokens = notokens;             
           }
+         
         } else {
           wordCounts.put(row[1].toString(), (new Integer(row[2])).intValue());
         }
       }
-      System.err.println("stopped at "+row[1].toString()+"=="+(new Integer(row[2])).intValue());
+      System.err.println("stopped at "+row[1].toString()+"=="+(new Integer(row[2])).intValue() + " ttratio ");
       //System.err.println("read thread finished");
     } catch (Exception e) {
       System.err.println(cstats.toString());
