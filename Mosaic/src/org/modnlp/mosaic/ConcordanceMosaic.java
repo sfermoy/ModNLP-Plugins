@@ -585,8 +585,8 @@ public class ConcordanceMosaic extends JFrame
 //                        temp= ObservedExpected;
 //                    }
                      
-                    if(temp <0)
-                        System.out.println(column[x]+" "+ temp);
+                //    if(temp <0)
+                //        System.out.println(column[x]+" "+ temp);
                     
                 }
                 
