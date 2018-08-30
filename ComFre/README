@@ -1,0 +1,16 @@
+Failed test on Linux,
+OpenJDK Runtime Environment (build 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11)
+OpenJDK 64-Bit Server VM (build 25.171-b11, mixed mode)
+
+Error message:
+The program 'java' received an X Window System error.
+This probably reflects a bug in the program.
+The error was 'RenderBadPicture (invalid Picture parameter)'.
+  (Details: serial 10064 error_code 143 request_code 139 minor_code 7)
+  (Note to programmers: normally, X errors are reported asynchronously;
+   that is, you will receive the error a while after causing it.
+   To debug your program, run it with the --sync command line
+   option to change this behavior. You can then get a meaningful
+   backtrace from your debugger if you break on the gdk_x_error()
+   function.)
+

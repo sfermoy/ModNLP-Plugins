@@ -3,7 +3,7 @@ all: jar
 
 TARGET_JAR=lib/mosaic.jar
 CLASSPATH=src:../../src:lib/colt.jar:lib/prefuse.jar:lib/je.jar:lib/idx.jar:lib/teccli.jar
-JAVACFLAGS=-g -d classes -classpath $(CLASSPATH) 
+JAVACFLAGS=-g -target 7 -source 7 -d classes -classpath $(CLASSPATH) 
 JAVAC=javac
 
 class:

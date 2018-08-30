@@ -175,7 +175,7 @@ public class ConcordanceMosaic extends JFrame
     final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Global)");
     final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Local)");
     
-    JPanel pas = new JPanel();
+    final JPanel pas = new JPanel();
     
     pas.add(frequencyButton);
     pas.add(stopwordFrequencyButton);
