@@ -60,6 +60,7 @@ import prefuse.visual.VisualItem;
 import prefuse.visual.expression.InGroupPredicate;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.io.BufferedReader;
@@ -187,14 +188,14 @@ public class ConcordanceMosaic extends JFrame
 
    // metricList.setSelectedIndex(0);
 
-   this.getRootPane().addComponentListener(new ComponentAdapter() {
+this.getRootPane().addComponentListener(new ComponentAdapter() {
             public void componentResized(ComponentEvent e) {
                 Component c =(Component)e.getSource();
                 totalWidth = (c.getWidth()-5)/9;
                 totalHeigth = c.getHeight()-40;
-                if( window.getExtendedState() != JFrame.MAXIMIZED_BOTH){
-                    MakeMosaic();
-                }
+//                if( window.getExtendedState() != JFrame.MAXIMIZED_BOTH){
+//                    MakeMosaic();
+//                }
             }
         });
         
@@ -450,7 +451,20 @@ public class ConcordanceMosaic extends JFrame
           } else {
             System.arraycopy(tkns2, 0, tkns, 4, tkns2.length);
           }
-          sentences[current_sentence] = tkns;
+          //reverse token order for arrabic
+          if(parent.getLanguage() == modnlp.Constants.LANG_AR){
+              System.out.println("dsaddsdasdsdsadsadsadsacacsdcwdcwd");
+            for(int i = 0; i < tkns.length / 2; i++)
+            {
+                Object temp = tkns[i];
+                tkns[i] = tkns[tkns.length - i - 1];
+                tkns[tkns.length - i - 1] = temp;
+            }
+            sentences[current_sentence] = tkns;
+          }else{
+            sentences[current_sentence] = tkns;
+          }
+          
           current_sentence++;
         }
         

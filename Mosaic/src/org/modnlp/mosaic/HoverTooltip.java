@@ -105,12 +105,24 @@ public class HoverTooltip extends ControlAdapter implements Control {
 
                         themosaic.setSelected(item);
                         String text = ((String) item.get("word"));
-                        p.showContext((Integer)item.get("column"), text);
+                        if(p.getLanguage() == modnlp.Constants.LANG_AR){
+                            p.showContext(( 8 - (Integer)item.get("column")), text);
+                        }
+                        else
+                        {
+                            p.showContext((Integer)item.get("column"), text);
+                        }
                         v.repaint();
                     }else{
                         themosaic.setSelected(null);
                         String text = ((String) item.get("word"));
-                        p.showContext((Integer)item.get("column"), text);
+                        if(p.getLanguage() == modnlp.Constants.LANG_AR){
+                            p.showContext(( 8 - (Integer)item.get("column")), text);
+                        }
+                        else
+                        {
+                            p.showContext((Integer)item.get("column"), text);
+                        }
                     }
                 }
        }
