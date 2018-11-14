@@ -409,8 +409,7 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
         var removed = false;
         var allRemoved = true;
         nested.map(function(m) {
-            if(m.key === d.key){
-                console.log(m.key);         
+            if(m.key === d.key){        
                 m.values.map(function(v) { if(removedKeys.has(v.Filename+v.ID)){
                         removed = true;
                 }else{
@@ -421,7 +420,6 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
         var colChoice = allRemoved ?   "orange" :"red";
         var currentColor =  removed ? "url(#gradient-rainbow-main)" : colChoice;
         var opacity =  removed ? 1.0 : 0.3;
-        console.log(currentColor)
         d3.select(this).style("fill", currentColor);     
         d3.select(this).style("opacity", opacity);
         removed ? add(d.key) : remove(d.key);
@@ -443,8 +441,7 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
         var removed = false;
         var allRemoved = true;
         nested.map(function(m) {
-            if(m.key === d.key){
-                console.log(m.key);         
+            if(m.key === d.key){   
                 m.values.map(function(v) { if(removedKeys.has(v.Filename+v.ID)){
                         removed = true;
                 }else{
@@ -459,8 +456,7 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
        .style("opacity", function(d) {
             var removed = false;
             nested.map(function(m) {
-                if(m.key === d.key){
-                    console.log(m.key);         
+                if(m.key === d.key){        
                     m.values.map(function(v) { if(removedKeys.has(v.Filename+v.ID)){
                             removed = true;
                     } });

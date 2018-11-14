@@ -56,7 +56,6 @@ public void redisplay() {
 
 public void addLine(String filename, String section){
     //ConcordanceObject[] toRemove = new ConcordanceObject[];
-    System.out.println("ading back");
     
     ConcordanceVector vec = OldVector;
     for (Iterator<ConcordanceObject> iterator = vec.iterator(); iterator.hasNext();) {
