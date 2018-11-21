@@ -11,9 +11,9 @@ JARREDS=.
 
 class:
 	$(JAVAC) $(JAVACFLAGS) src/org/modnlp/metafacet/*.java 
-	cp src/org/modnlp/metafacet/*.js classes/org/modnlp/metafacet/
+#	cp src/org/modnlp/metafacet/*.js classes/org/modnlp/metafacet/
 	cp src/org/modnlp/metafacet/*.html classes/org/modnlp/metafacet/
-	cp src/org/modnlp/metafacet/*.csv classes/org/modnlp/metafacet/
+#	cp src/org/modnlp/metafacet/*.csv classes/org/modnlp/metafacet/
 
 jar: class
 	$(JAR) $(JARFLAGS) $(TARGET_JAR) -C classes $(JARREDS) 
