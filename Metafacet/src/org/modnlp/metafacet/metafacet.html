@@ -100,29 +100,32 @@
     float:left;
     margin-right: 1em;
 }
+
+
   </style>
 
 </head>
-<!--<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>-->
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
 <body>
 
   <div id="title">Metafacet: Concordance Meta-data facet distributions </div>
   <div id="legend2" align="centre">
-	  <h3>HTML Horizontal Legend</h3>
 	   <div class="legend2"> <p class="country-name"><span class="key-dot removed"></span>All Lines Removed</p> </div>
-	   <div class="legend2"> <p class="country-name"><span class="key-dot some"></span>Some Lines Removed/p> </div>
+	   <div class="legend2"> <p class="country-name"><span class="key-dot some"></span>Some Lines Removed</p> </div>
 	</div>
   <div id="chart"></div>
   <div id="explination"> This plugin can be used to see the number of lines in the current concordance which are associated with a
-      particular piece of metadata, or to filter the concordance based on the metadata.
+      particular piece of metadata, and to filter the concordance based on the metadata.
       <ul><li>EXAMPLE</li>
-          <li>Select "author" form the dropdown.</li>
-          <li>Then expand/contract/slide the range view to relevant Authors.</li>
-      <li>Clicking on a bar will remove the lines associated with the attribute from the concordance list.</li>
-      <li>Once you are happy with your new concordance list the "Update Bars/Load concordance" button
-  to view the metadata distributions for the filtered list</li>
+          <li>Select metafacet such as "author" form the dropdown.</li>
+          <li>Then expand/contract/slide the range view to relevant data (Authors).</li>
+      <li>Clicking on a bar will remove/add the concordance lines associated with the attribute</li>
+      <li>Ctrl+click removes all lines but the ones associated with the attribute clicked</li>
+      <li>Once you are happy with your new concordance list the "Update Bars/Load concordance" refreshes MetaFacet for the filtered list</li>
+      <li>Mosiac plugin works with MetaFacet</li>
+      <li>Removing lines from one attribute effects the other attribute views. Orange attribute bars are ones which have been partially removed from th concordance by another attribute interaction </li>
       </ul>
-      You may select  multiple bars across all of the dropdown attributes. If the <b>Mosaic</b> plugin is active it will update as the concordance is filtered</div>
+     
 
   <script>
 
@@ -145,13 +148,15 @@
 
 var attrSelected ="Filename";
 var removedKeys = new Set();
+var shouldSort = false;
 
 //stores the reordered data so we can extraxt metadata assoiated with attribute keys
 var nested;
 
 dropdown = d3.select("#chart").append("div")
                 .attr("id","drop")
-                .attr("align","centre");
+                .attr("align","centre")
+                ;
         
 //Added only for the mouse wheel
 var zoomer = d3.behavior.zoom()
@@ -193,6 +198,26 @@ svg = d3.select("#chart").append("svg")
             dataProcess(selection.value);
             
     });
+    
+    var checkbox = d3.select("#drop")
+    .append("input")
+    .attr("type","checkbox")
+    .attr("id","cb")
+    .attr("name","cb")
+    .on("change", function(d){
+            if(shouldSort ===true)
+                shouldSort = false
+            else
+                shouldSort = true;
+            selection = document.getElementById("dropdown");
+            dataProcess(selection.value);
+            
+    });
+    d3.select("#drop")
+    .append("label")
+    .attr("for","cb")
+    .text("Sort by frequency");
+    
     
     var elements = ["Filename","Title", "Collection_Title", "Editor", "Author", "Publication_Date", "Authorship_Date", "Translator",
         "Source_Date", "Source_Filename", "Source_Language", "Original_Title" ,"Outlet", "Internet_Outlet","Format"];
@@ -406,24 +431,40 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
       .attr("y", function(d,i) { return main_yScale(d.key); })
       .attr("height", main_yScale.rangeBand())
       .on("click", function(d) {
-        var removed = false;
-        var allRemoved = true;
-        nested.map(function(m) {
-            if(m.key === d.key){        
-                m.values.map(function(v) { if(removedKeys.has(v.Filename+v.ID)){
-                        removed = true;
-                }else{
-                    allRemoved = false;
-                }});
-            };
-        });
-        var colChoice = allRemoved ?   "orange" :"red";
-        var currentColor =  removed ? "url(#gradient-rainbow-main)" : colChoice;
-        var opacity =  removed ? 1.0 : 0.3;
-        d3.select(this).style("fill", currentColor);     
-        d3.select(this).style("opacity", opacity);
-        removed ? add(d.key) : remove(d.key);
-      })
+          if ( d3.event.ctrlKey) {
+            d3.select(".mainGroup").selectAll(".bar")
+                    .each(function(b) {
+                        var shouldRemove = true;
+                        if(b.key === d.key)
+                            shouldRemove = false;
+                        var currentColor =  shouldRemove ?  "red":"url(#gradient-rainbow-main)" ;
+                        var opacity =  shouldRemove ? 0.3 : 1.0;
+                        d3.select(this).style("fill", currentColor);     
+                        d3.select(this).style("opacity", opacity);
+                        shouldRemove ? remove(b.key): add(b.key); ;
+              });             
+        }
+        else{
+            var removed = false;
+            var allRemoved = true;
+            nested.map(function(m) {
+                if(m.key === d.key){        
+                    m.values.map(function(v) { if(removedKeys.has(v.Filename+v.ID)){
+                            removed = true;
+                    }else{
+                        allRemoved = false;
+                    }});
+                };
+            });
+            var colChoice = allRemoved ?   "orange" :"red";
+            var currentColor =  removed ? "url(#gradient-rainbow-main)" : colChoice;
+            var opacity =  removed ? 1.0 : 0.3;
+            d3.select(this).style("fill", currentColor);     
+            d3.select(this).style("opacity", opacity);
+            removed ? add(d.key) : remove(d.key);
+            }
+                 vec.redisplay();
+    })
       .on("mousemove", function(d){
             tooltip
               .style("left", d3.event.pageX - 50 + "px")
@@ -618,16 +659,20 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
     }
     
     function dataProcess(attribute){
+        
         svg.selectAll("*").remove();
 //        console.log(attribute)
         var nameCount = d3.nest()
         .key(function(d) { return d[attribute]; })
         .rollup(function(v) { return v.length; })
         .entries(initdata);
-
+        
+        if(shouldSort)
+            nameCount= nameCount.sort(function(a, b){ return d3.descending(a.values, b.values); });
          nested = d3.nest()
         .key(function(d) { return d[attribute]; })
         .entries(initdata);  
+
         
 //        d3.select('body')
 //        .append('div')
@@ -646,7 +691,6 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
                                        removedKeys.add(v.Filename+v.ID); });
         };
       });
-            vec.redisplay();
     }
     
     function add(key){
@@ -658,7 +702,7 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
                                        removedKeys.delete(v.Filename+v.ID); });
         };
       });
-        vec.redisplay();
+
     }
   
 

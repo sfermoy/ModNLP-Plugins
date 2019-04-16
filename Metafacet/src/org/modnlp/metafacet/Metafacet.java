@@ -1,68 +1,207 @@
-/**
- * Copyright 2018 Shane Sheehan
- * (c) 2018 S Sheehan <sheehas1@tcd.ie> S Luz <luzs@acm.org>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
  */
 package org.modnlp.metafacet;
 
-import com.sun.javafx.application.PlatformImpl;
+import java.awt.Dimension;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import javafx.concurrent.Worker.State;
-import javafx.embed.swing.JFXPanel;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.geometry.Insets;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
 import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
+import javax.swing.JProgressBar;
 import modnlp.tec.client.ConcordanceBrowser;
 import modnlp.tec.client.ConcordanceObject;
 import modnlp.tec.client.ConcordanceVector;
+import modnlp.tec.client.HeaderProducer;
 import modnlp.tec.client.Plugin;
-import netscape.javascript.JSObject;
+import modnlp.tec.client.TecClientRequest;
 
-public class Metafacet extends JFrame implements Plugin{
+/**
+ *
+ * @author shane
+ */
+public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
+    
     private static ConcordanceBrowser parent = null;
-    private JFrame frame;
-    private static HashMap< String, String> headers = null;
+
+    private static HashMap< String, String> headers = new HashMap<String, String>();
     private static String json ="[{key: \"test\", values:5},{key: \"t1\", values:2}]";
     private static boolean first = true;
     private static WebEngine engine;
     private static Button btn;
     private static ConcordanceVector vec;
     private  static VectorManager vMan;
-    
+    private HeaderDownloadThread headerThread = null;
+    private HeaderProducer headerProducer = null;
+    private Thread thread;
+    private JFrame frame=null;
+    private final Object lock = new Object();
+    private MetafacetContainer meta = null;
+    private String dirName =".MetaFacetCache";
+    JProgressBar b; 
+    private BufferedReader input;
+    private String serverStartdate;
+    private String cachedDate= "";
+    private String pattern = "MM/dd/yyyy HH:mm:ss";
+    private DateFormat df = new SimpleDateFormat(pattern);
+
     @Override
     public void setParent(Object p){
-    parent = (ConcordanceBrowser)p;
-    frame = this;
+        parent = (ConcordanceBrowser)p;
   }
     
     @Override
     public void activate() {
+        
+        headerProducer= parent.getHeaderProducer();
+        File directory = new File(dirName);
+        directory.mkdir();
+        serverStartdate = getServerStartDate();
+        stop();        
+        start();
+
+    } 
     
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        this.setSize(900,800);
-        this.setVisible(true);
-        headers = parent.getHeaderMap();
+    
+    private void dlHeader() {
+    frame = new JFrame("Loading MetaFacet Browser");
+    frame.setPreferredSize(new Dimension(400, 60));
+    b = new JProgressBar(); 
+    // set initial value 
+    b.setValue(0); 
+    b.setStringPainted(true); 
+    frame.add(b);
+    frame.pack();
+    frame.setVisible(true);
+    TecClientRequest request = new TecClientRequest();
+    //request.put("request", "nooftokens");
+    //look at freq list download and write request in similar fashon
+    request.put("request", "dldHeaders");
+    if ( parent.subCorpusSelected() )
+      request.put("xquerywhere",parent.getXQueryWhere());
+    if ( (headerThread != null) ) {
+      headerThread.stop();
+    }
+    if (parent.isStandAlone()) {
+        headerThread = new HeaderDownloadThread(headerProducer.getBufferedReader(), request, headers,b);
+        headerThread.addListener(this);
+        if(meta !=null)
+            headerThread.addListener(meta);
+        headerThread.addListener(this);
+        headerThread.start();
+        headerProducer.start();
+        //pause while downloading  
+    }
+    else {
+
+        request.setServerURL("http://"+parent.getRemoteServer());
+        request.setServerPORT(parent.getRemotePort()); 
+        request.setServerProgramPath("/allheaders");
+        headerThread = new HeaderDownloadThread(request, headers,b);
+        headerThread.addListener(this);
+        if(meta !=null)
+           headerThread.addListener(meta);
+        headerThread.setEncoding(parent.getEncoding());
+        headerThread.start();
+        //pause while downloading
+
+
+     
+    }
+  }   
+    
+    public void start() {
+    if (thread == null) {
+      thread = new Thread(this);
+      thread.setPriority(Thread.MIN_PRIORITY);
+      thread.start();
+    }
+  }
+
+  public void stop() {
+    if (thread != null) {
+      thread = null;
+    }
+  }
+
+    @Override
+    public void run() {  
+               //workaround for greek not having a language constant
+        int newLang = parent.getLanguage();
+        if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
+                    newLang = 5;
+        
+        String filename = dirName+"/language"+newLang+parent.getRemoteServer()+"metadata.out";
+        //setup
+        FileInputStream fis = null;
+        ObjectInputStream in = null;
+        File test = new File(filename);
+        Date cacheDate =null;
+        Date serverDate=null;
+        
+        //checkif cache exists
+        String cacheDateStr = getCachedDate();
+        if (cacheDateStr.equalsIgnoreCase("")  || serverStartdate.equalsIgnoreCase("") ){
+            cacheDate =Calendar.getInstance().getTime();
+            serverDate =Calendar.getInstance().getTime();
+        }else{
+            try{
+                cacheDate =df.parse(cacheDateStr);   
+                serverDate =df.parse(serverStartdate);
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
+        }
+//        System.out.println(cacheDate);
+//        System.out.println(serverDate);
+        
+        //if the corpus-language headers have been downloaded
+        //and the cache is valid
+        if(test.exists() && !cacheDateStr.equalsIgnoreCase("") && serverDate.before(cacheDate)){
+            //get from cache
+            try {
+                fis = new FileInputStream(filename);
+                in = new ObjectInputStream(fis);
+                headers= null;
+                headers = (HashMap< String, String>) in.readObject();
+                in.close();
+                makeJson();
+                if(meta == null){//make metafacet
+                    meta = new MetafacetContainer(this,headers,json, vec, parent);
+                }
+                else{//reshow metafacet and update it
+                    meta.setVisible(true);
+                    meta.notifyOfThreadComplete(headerThread);
+                   
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        } else{// get headers from server and update cache
+            setCachedDate();
+            dlHeader();
+        }     
+    }
+
+    public void makeJson(){
         //cycle through concordance and build metaddata array
         json = "[";
         vec = parent.getConcordanceVector();
@@ -75,98 +214,112 @@ public class Metafacet extends JFrame implements Plugin{
             if (iterator.hasNext()){
                 json += headers.getOrDefault(key, "error")+",";
             }else
-                json += headers.getOrDefault(key, "error")+"]";
-            
-        }
+                json += headers.getOrDefault(key, "error")+"]";            
+        } 
+    }
+    
+    @Override
+    public void notifyOfThreadComplete(HeaderDownloadThread thread) {
+        frame.dispose();
+        // save the object to file
+        FileOutputStream fos = null;
+        ObjectOutputStream out = null;
         
-        if( engine == null){
-            //swing run later thread
-            SwingUtilities.invokeLater(new Runnable() {  
-               public void run() { 
-                   JFXPanel fxPanel = new JFXPanel();
-                   initFX(fxPanel);
-                   frame.add(fxPanel);       
-               }
-           });  
+        //workaround for greek not having a language constant
+        int newLang = parent.getLanguage();
+         if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
+                    newLang = 5;
+        try {
+            String filename = dirName+"/language"+newLang+parent.getRemoteServer()+"metadata.out";
+            fos = new FileOutputStream(filename);
+            out = new ObjectOutputStream(fos);
+            out.writeObject(headers);
+            out.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        makeJson(); 
+
+        if(meta == null){
+            meta = new MetafacetContainer(this,headers,json, vec, parent);
+        }else{
+             meta.setVisible(true);
+              
+        }
+    }
+    public HashMap< String, String> getHeaders(){
+        return headers;
+    }
+    
+
+    private String getServerStartDate() {
+    String result = "";
+    try{
+        if (parent.isStandAlone()) {
+            //for now we will just return empty string
         }
         else{
-            btn.fire();
+            TecClientRequest clRequest = new TecClientRequest();
+            clRequest.setServerURL("http://" + parent.getRemoteServer());
+            clRequest.setServerPORT(parent.getRemotePort());
+            clRequest.put("request", "serverDate");
+            if (parent.isSubCorpusSelectionON()) {
+              clRequest.put("xquerywhere", parent.getXQueryWhere());
+            }
+            clRequest.put("casesensitive", parent.isCaseSensitive() ? "TRUE" : "FALSE");
+            clRequest.setServerProgramPath("/freqword");
+            URL exturl = new URL(clRequest.toString());
+            HttpURLConnection exturlConnection = (HttpURLConnection) exturl.openConnection();
+            exturlConnection.setRequestMethod("GET");
+            input = new BufferedReader(new InputStreamReader(exturlConnection.getInputStream(), "UTF-8"));
+            result = input.readLine();
+            exturlConnection.disconnect();
         }
-    } 
+        
+      }
+     catch (IOException e) {
+      System.err.println("Exception: couldn't create stream socket" + e);
+    }
+    return result;
+  }
+
+    private void setCachedDate() {
+        FileOutputStream fos = null;
+        ObjectOutputStream out = null;
+        try {
+            String filename = dirName+"/cdate"+parent.getRemoteServer()+".out";
+            fos = new FileOutputStream(filename);
+            out = new ObjectOutputStream(fos);
+            Date today = Calendar.getInstance().getTime();        
+            //Store date as string for caching on client side
+            String dateCached = df.format(today);
+            out.writeObject(dateCached);
+            out.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
     
-     private static void initFX(JFXPanel fxPanel) {
-        // This method is invoked on the JavaFX thread
-        //cannot run in swing enviornment
-
-          PlatformImpl.startup(
-            new Runnable() {
-                public void run() {
-                    Scene scene = createScene();
-                    fxPanel.setScene(scene);
-                    PlatformImpl.setImplicitExit(false);
-                }});
-          
-    }
-     
-    private static Scene createScene() {
-        WebView view = new WebView();
-        engine = view.getEngine();
-        engine.setJavaScriptEnabled(true);   
-        
-        VBox root = new VBox();   
-        HBox hbox = new HBox(300);
-        hbox.setPadding(new Insets(12, 12, 12, 100));
-        btn = new Button();
-        btn.setText("Update Bars/Load concordance");
-        Button btn1 = new Button();
-
-        
-        btn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                json = "[";
-                vec = parent.getConcordanceVector();
-                for (Iterator<ConcordanceObject> iterator = vec.iterator(); iterator.hasNext();) {
-                    ConcordanceObject next = iterator.next();
-                    String fn = next.sfilename;
-                    fn= fn.substring(0, fn.indexOf("."));
-                    String key = fn+ next.sectionID;
-                    //System.out.println(key);
-                    if (iterator.hasNext()){
-                        json += headers.getOrDefault(key, "error")+",";
-                    }else
-                        json += headers.getOrDefault(key, "error")+"]";
-
-                }
-                engine.executeScript("loadData(" + json + ")");
-                vMan.updateVector();
+     private String getCachedDate() {
+        String result = "";
+        FileInputStream fis = null;
+        ObjectInputStream in = null;
+        String filename = dirName+"/cdate"+parent.getRemoteServer()+".out";
+        File test = new File(filename);
+        if(test.exists()){
+            try{
+               fis = new FileInputStream(filename);
+               in = new ObjectInputStream(fis);
+               result = (String)in.readObject();
+               in.close();
+            }catch(Exception e)
+            {
+                e.printStackTrace();
             }
-        });
-        
-         
-        
-        hbox.getChildren().addAll(btn);     
-        root.getChildren().add(hbox);
-        
-        engine.getLoadWorker().stateProperty().addListener((observable, oldState, newState) -> {
-            if (newState == State.SUCCEEDED) {
-                JSObject bridge = (JSObject) engine.executeScript("window");
-                vMan = new VectorManager(parent);
-                bridge.setMember("vec", vMan);
-                engine.executeScript("loadData(" + json + ")");
-            }
-        });
-        
-        VBox.setVgrow(view, javafx.scene.layout.Priority.ALWAYS);
-        
-        Scene scene = new Scene(root, 1100, 1000);
-        root.getChildren().add(view);
-        
-        engine.load(Metafacet.class.getResource("metafacet.html").toString());
-        return (scene);
+        }
+        return result;
     }
-
-  
+      
 }
 
 
