@@ -54,7 +54,7 @@ public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
     private JFrame frame=null;
     private final Object lock = new Object();
     private MetafacetContainer meta = null;
-    private String dirName =".MetaFacetCache";
+    private String dirName ="MetaFacetCache";
     JProgressBar b; 
     private BufferedReader input;
     private String serverStartdate;
