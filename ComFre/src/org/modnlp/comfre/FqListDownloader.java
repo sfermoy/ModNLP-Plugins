@@ -111,7 +111,7 @@ public class FqListDownloader implements Runnable{
               Object [] orow = new Object[4]; 
               for (int j = 0; j < row.length; j++)
                 orow[j] = row[j];
-              if((new Integer(row[2])).intValue()<5)
+              if((new Integer(row[2])).intValue()<1)
                   continue;
               orow[3] = new Float((float)(new Integer(row[2])).intValue()/notokens);
               model.addRow(orow);
