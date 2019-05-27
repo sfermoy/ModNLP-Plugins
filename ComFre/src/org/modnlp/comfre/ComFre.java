@@ -17,122 +17,277 @@
  */
 package org.modnlp.comfre;
 
-import com.sun.javafx.application.PlatformImpl;
+import java.io.BufferedReader;
 import java.io.File;
-import javafx.application.Platform;
-import javafx.embed.swing.JFXPanel;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.geometry.Insets;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
-import javafx.stage.FileChooser;
-import javafx.stage.WindowEvent;
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javax.swing.JMenu;
+import javax.swing.JOptionPane;
 import modnlp.tec.client.ConcordanceBrowser;
 import modnlp.tec.client.Plugin;
+import modnlp.tec.client.TecClientRequest;
+import org.modnlp.metafacet.HeaderDownloadThread;
 
-public class ComFre extends JFrame implements Plugin{
+public class ComFre implements Plugin, Runnable, ThreadCompleteListener{
+    
     ConcordanceBrowser parent =null;
-     private JFrame frame;
+    private BufferedReader input;
+    private String dirName = System.getProperty("user.home")+ File.separator+"GOKCache" + File.separator+"ComFreCache";   
+    private String serverStartdate;
+    private String cachedDate= "";
+    private String pattern = "MM/dd/yyyy HH:mm:ss";
+    private DateFormat df = new SimpleDateFormat(pattern);
+    
+    private String[] nameStrings = { };
+    private Thread thread;
+    
+    private String dlFile1 ="";
+    private String dlFile2 ="";
+    
+    private String pathf1;
+    private String pathf2;
+    
+    private FqListDownloader dl;
+    ComFreContainer vis;
+    
     
     @Override
     public void setParent(Object p){
     parent = (ConcordanceBrowser)p;
-    frame = this;
   }
     
     @Override
     public void activate() {
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        this.setSize(1100,1000);
-        this.setVisible(true);
-        
-        
-        //swing run later thread
-        SwingUtilities.invokeLater(new Runnable() {  
-           public void run() { 
-               JFXPanel fxPanel = new JFXPanel();
-               initFX(fxPanel);
-               frame.add(fxPanel);       
-           }
-       });   
+        JMenu subcorpList= parent.getRecentMenu();
+        subcorpList.getItemCount();
+        ObservableList<String> options = FXCollections.observableArrayList();
+        for (int i = 0; i < subcorpList.getItemCount(); i++) {
+            options.add(subcorpList.getItem(i).getText());
+        }
+         vis = new ComFreContainer(options,this);    
+        serverStartdate = getServerStartDate();
+        stop();
+        start();
     } 
     
-     private static void initFX(JFXPanel fxPanel) {
-        // This method is invoked on the JavaFX thread
-        //cannot run in swing enviornment
-          PlatformImpl.startup(
-            new Runnable() {
-                public void run() {
-                    Scene scene = createScene();
-                    fxPanel.setScene(scene);
-                }});
+    @Override
+    public void run() {
+        validateCache();
+    }
+    
+    public void start() {
+        if (thread == null) {
+          thread = new Thread(this);
+          thread.setPriority(Thread.MIN_PRIORITY);
+          thread.start();
+        }
+    }
+
+    public void stop() {
+      if (thread != null) {
+        thread = null;
+      }
+    }
+    
+    
+    public void buildVis(String f1, String f2) {
+        dlFile1 ="";
+        dlFile2 ="";
+        String f1Query = getXquery(f1);
+        String f2Query = getXquery(f2);
+        pathf1 = dirName + File.separator+"file"+f1Query.hashCode()+".csv";
+        pathf2 = dirName + File.separator+"file"+f2Query.hashCode()+".csv";
+        File file1 = new File(pathf1);
+        File file2 = new File(pathf2);
+        
+        if( file1.exists() && file2.exists()){ //both fqlists already downloaded
+                //redraw using the xquery string.csv
+            vis.Redraw(pathf1, pathf2);
+        }else{
+            if (!file1.exists() && !file2.exists()){//both fqlists not downloaded
+               dlFile1 = f1Query;
+               dlFile2 = f2Query;
+            }
+            else if (file1.exists() && !file2.exists()){//1 fqlist downloaded
+               dlFile1 = f2Query;
+            }
+            else{
+               dlFile1 = f1Query;
+            }   
+           FqListDownloader dl = new FqListDownloader(parent,dlFile1);
+           dl.addListener(this);
+           dl.run();
+        }
     }
      
-    private static Scene createScene() {
-        WebView view = new WebView();
-        WebEngine engine = view.getEngine();
-        engine.setJavaScriptEnabled(true);
-        
-        VBox root = new VBox();
-        
-        HBox hbox = new HBox(300);
-        hbox.setPadding(new Insets(12, 12, 12, 100));
-        Button btn = new Button();
-        btn.setText("Choose Left File");
-             
-        btn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Open Resource File");
-                File file =fileChooser.showOpenDialog(null);
-                engine.executeScript("file1 = \""+file.getAbsolutePath()+"\"; title1 = \"" +file.getName() + "\";");           
-            }
-        });
-        
-        Button btn1 = new Button();
-        btn1.setText("Choose Right File");
-        
-        btn1.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Open Resource File");
-                File file =fileChooser.showOpenDialog(null);
-                engine.executeScript("file2 = \""+file.getAbsolutePath()+"\"; title2 = \"" +file.getName() + "\";");
-            }
-        });
-        
-        Button btnDraw = new Button();
-        btnDraw.setText("ReDraw");
-        
-        btnDraw.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                engine.executeScript("redrawVis();");
-            }
-        });
-        
-        hbox.getChildren().addAll(btn,btnDraw,btn1);     
-        root.getChildren().add(hbox);
-                
-        engine.load(ComFre.class.getResource("ComFre.html").toString());
-        VBox.setVgrow(view, javafx.scene.layout.Priority.ALWAYS);
-        
-        Scene scene = new Scene(root, 1100, 1000);
-        root.getChildren().add(view);
-        return (scene);
+    public String getXquery(String queryName){
+    // get query from the other cache folder
+    String location = System.getProperty("user.home") + File.separator+"GOKCache" + File.separator+"namedCorpora";
+    FileInputStream fis = null;
+    ObjectInputStream in = null;
+    String filename = location+File.separator+parent.getLanguage()+File.separator+queryName;
+    File test = new File(filename);
+    String result = null;
+    if(test.exists()){
+        try{
+           fis = new FileInputStream(filename);
+           in = new ObjectInputStream(fis);
+           result = (String)in.readObject();
+           in.close();
+        }catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+    else{
+        JOptionPane.showMessageDialog(null, "Missing file");
+    }
+        return result;
     }
 
 
+    @Override
+    public void notifyOfThreadComplete(FqListDownloader thread) {
+        if(!dlFile2.equalsIgnoreCase("")){
+            FqListDownloader dl1  = new FqListDownloader(parent,dlFile2);
+            dl1.addListener(this);
+            dlFile2 ="";
+            dl1.run();
+        }else{
+            vis.Redraw(pathf1, pathf2);
+        }
+    }
 
+    
+    public void validateCache() {
+        Date cacheDate =null;
+        Date serverDate=null;
+        
+        //Create date objects for cache validation
+        String cacheDateStr = getCachedDate();
+        if (cacheDateStr.equalsIgnoreCase("")  || serverStartdate.equalsIgnoreCase("") ){
+            cacheDate =Calendar.getInstance().getTime();
+            serverDate =Calendar.getInstance().getTime();
+        }else{
+            try{
+                cacheDate =df.parse(cacheDateStr);   
+                serverDate =df.parse(serverStartdate);
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
+        }
+        
+        //Is cache invalid?
+        if( cacheDateStr.equalsIgnoreCase("") && !serverDate.before(cacheDate)){      
+            File directory = new File(dirName);
+            deleteDirectory(directory); //delete entire cache folder
+            setCachedDate(); // create empty cache        
+        }
+    }
+    
+    private void setCachedDate() {
+        FileOutputStream fos = null;
+        ObjectOutputStream out = null;
+        try {
+            File directory = new File(dirName);
+            if(!directory.exists())
+                directory.mkdirs();
+            String filename = dirName + File.separator+"cdate"+parent.getRemoteServer()+".out";
+            fos = new FileOutputStream(filename);
+            out = new ObjectOutputStream(fos);
+            Date today = Calendar.getInstance().getTime();        
+            //Store date as string for caching on client side
+            String dateCached = df.format(today);
+            out.writeObject(dateCached);
+            out.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    
+     private String getCachedDate() { 
+        String result = "";
+        FileInputStream fis = null;
+        ObjectInputStream in = null;
+        String filename = dirName + File.separator+"cdate"+parent.getRemoteServer()+".out";
+        File test = new File(filename);
+        if(test.exists()){
+            try{
+               fis = new FileInputStream(filename);
+               in = new ObjectInputStream(fis);
+               result = (String)in.readObject();
+               in.close();
+            }catch(Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+        return result;
+    }
+     
+       
+    private String getServerStartDate() {
+        String result = "";
+        try{
+            if (parent.isStandAlone()) {
+                //for now we will just return empty string
+            }
+            else{
+                TecClientRequest clRequest = new TecClientRequest();
+                clRequest.setServerURL("http://" + parent.getRemoteServer());
+                clRequest.setServerPORT(parent.getRemotePort());
+                clRequest.put("request", "serverDate");
+                if (parent.isSubCorpusSelectionON()) {
+                  clRequest.put("xquerywhere", parent.getXQueryWhere());
+                }
+                clRequest.put("casesensitive", parent.isCaseSensitive() ? "TRUE" : "FALSE");
+                clRequest.setServerProgramPath("/freqword");
+                URL exturl = new URL(clRequest.toString());
+                HttpURLConnection exturlConnection = (HttpURLConnection) exturl.openConnection();
+                exturlConnection.setRequestMethod("GET");
+                input = new BufferedReader(new InputStreamReader(exturlConnection.getInputStream(), "UTF-8"));
+                result = input.readLine();
+                exturlConnection.disconnect();
+            }
+
+          }
+         catch (IOException e) {
+          System.err.println("Exception: couldn't create stream socket" + e);
+        }
+        return result;
+      }
+    
+     
+    public static boolean deleteDirectory(File directory) {
+        if(directory.exists()){
+            File[] files = directory.listFiles();
+            if(null!=files){
+                for(int i=0; i<files.length; i++) {
+                    if(files[i].isDirectory()) {
+                        deleteDirectory(files[i]);
+                    }
+                    else {
+                        files[i].delete();
+                    }
+                }
+            }
+        }
+        return(directory.delete());
+    } 
   
 }
 
