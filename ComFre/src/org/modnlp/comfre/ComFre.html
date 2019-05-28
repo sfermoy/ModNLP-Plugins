@@ -65,7 +65,7 @@
 <!--
 
  Placed at the end of the document so the pages load faster -->
- <!--<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>-->
+<!--<<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>-->
 <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
 <script type="text/javascript" src="simpleSlider.js"></script>
 <script type='text/javascript'>
@@ -80,17 +80,21 @@
  var TokensModern = 0;
  var myMap = new Map();
  var margin, marginMid,x, y, xM, xR, yR, svgSlider, color, svg, svgM, svgR ;
- var title1 = "List 1";
- var title2 = "List 2";
+ var title1 = "Sample Pre-modern Corpus";
+ var title2 = "Sample Modern Corpus";
 
- function redrawVis(){
+ function redrawVis(f1,f2 ){
+    file1 = f1;
+    file2 = f2;
+    title1 = "";
+    title2 = "";
     svg.selectAll("*").remove();
     svgM.selectAll("*").remove();
     svgR.selectAll("*").remove();
     svgSlider.selectAll("*").remove();
 
 	d3.csv(file1, function(error, data) {
-		TokensGok = 0;
+            TokensGok = 0;
 	    maxRankLeft = 0;
 	  data.forEach(function(d) {
 	    maxRankLeft++;
@@ -211,6 +215,7 @@ return 1;
 function DrawVis(data,dataRight){
 
 svg.append("text")
+        .attr("id", "title")  
         .attr("x", (width / 2))             
         .attr("y", 0+5 )
         .attr("text-anchor", "middle")  
@@ -219,6 +224,7 @@ svg.append("text")
         .text(title1);
 
 svgR.append("text")
+        .attr("id", "title")  
         .attr("x", (width / 2))             
         .attr("y", 0 +5)
         .attr("text-anchor", "middle")  
@@ -303,17 +309,23 @@ svgR.append("text")
       .x(function(d) { return d.x; })
       .y(function(d) { return d.y; });
 
-    data.forEach(function(d) {     
-        var relatedObject = myMap.get(d.Word);
-        if (relatedObject == null){
-            d.Frequency1 = 0;
-            d.Rank = maxRankRight;
-        }else{
-          d.Frequency1 = relatedObject[0];
-          d.Rank = relatedObject[1];
-        }  
-        d.diff = (y(d.Type)>yR(d.Rank)) ?  y(d.Type) - yR(d.Rank) :  yR(d.Rank) - y(d.Type) ;
-      });
+
+i=0;
+
+data.forEach(function(d) {     
+    var relatedObject = myMap.get(d.Word);
+    if (typeof relatedObject === 'undefined'){
+        d.Frequency1 = 0;
+        d.Rank = maxRankRight;
+    }else{
+
+      d.Frequency1 = relatedObject[0];
+      d.Rank = relatedObject[1];
+    }  
+    d.diff = (y(d.Type)>yR(d.Rank)) ?  y(d.Type) - yR(d.Rank) :  yR(d.Rank) - y(d.Type) ;
+    i++;
+    d.order = i;
+  });
 
 data = data.filter(function(d){
         if(isNaN(d.Frequency)){
@@ -333,12 +345,7 @@ dataRight = dataRight.filter(function(d){
   });
 
 
-  i=0;
-
-  data.forEach(function(d) {
-        i++;
-        d.order = i;
-      });
+  
 
 
     var max = d3.max(data, function(d) { return Math.abs(d.diff);} );
@@ -346,7 +353,8 @@ dataRight = dataRight.filter(function(d){
     var lines = svgM.selectAll(".line")
         .data(data)
         .enter().append("g")
-          .attr("class", "lines");
+          .attr("class", "lines")
+          .style("visibility", "hidden");
 
         lines.append("path")
             .attr("class", "line")
@@ -380,6 +388,8 @@ dataRight = dataRight.filter(function(d){
           }
           return true;
       });
+      
+
 
   var orangeLines = lines.filter(function(d){
           if( y(d.Type) < yR(d.Rank) ){
@@ -414,7 +424,7 @@ dataRight = dataRight.filter(function(d){
        .style("visibility", "visible");
   });
 
-       slider1.width(434).x(308).y(10).value(0.0001).event(function(){
+       slider1.width(434).x(308).y(10).value(0.92).event(function(){
           blueLines.filter(function (d) { return ((Math.abs(d.diff) < max * slider1.value()) || (Math.abs(d.diff) > max * slider2.value())); })
             .style("visibility", "hidden");
           blueLines.filter(function (d) { return (Math.abs(d.diff) >= max * slider1.value()) && (Math.abs(d.diff) <= max * slider2.value()); })
@@ -429,7 +439,7 @@ dataRight = dataRight.filter(function(d){
       });
 
 
-     slider3.width(434).x(308).y(40).value(0.0001).event(function(){
+     slider3.width(434).x(308).y(40).value(0.92).event(function(){
           orangeLines.filter(function (d) { return ((Math.abs(d.diff) < max * slider3.value()) || (Math.abs(d.diff) > max * slider4.value())); })
             .style("visibility", "hidden");
           orangeLines.filter(function (d) { return (Math.abs(d.diff) >= max * slider3.value()) && (Math.abs(d.diff) <= max * slider4.value()); })
@@ -447,6 +457,11 @@ dataRight = dataRight.filter(function(d){
       svgSlider.call(slider2);
       svgSlider.call(slider3);
       svgSlider.call(slider4);
+      
+      blueLines.filter(function (d) { return ((Math.abs(d.diff) < max * slider1.value()) || (Math.abs(d.diff) > max * slider2.value())); })
+            .style("visibility", "hidden");
+          blueLines.filter(function (d) { return (Math.abs(d.diff) >= max * slider1.value()) && (Math.abs(d.diff) <= max * slider2.value()); })
+            .style("visibility", "visible");
 
     svgR.append("g")
         .attr("class", "x axis")

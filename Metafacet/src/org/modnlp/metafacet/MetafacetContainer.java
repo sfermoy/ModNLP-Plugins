@@ -41,7 +41,6 @@ import netscape.javascript.JSObject;
 public class MetafacetContainer extends JFrame implements ThreadCompleteListener{
     private static ConcordanceBrowser parent = null;
     private JFrame frame;
-    private JFXPanel fxPanel ;
     private static HashMap< String, String> headers = null;
     private static String json ="[{key: \"test\", values:5},{key: \"t1\", values:2}]";
     private static boolean first = true;
@@ -51,7 +50,6 @@ public class MetafacetContainer extends JFrame implements ThreadCompleteListener
     private  static VectorManager vMan;
     private static int currentLanguage = 0;
     private static Metafacet worker = null;
-    private static boolean buttonpressed = false;
     
  public MetafacetContainer(Metafacet m,HashMap< String, String> h,String j,ConcordanceVector v, ConcordanceBrowser p ){
         this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -123,7 +121,6 @@ public class MetafacetContainer extends JFrame implements ThreadCompleteListener
                 if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
                    newLang = 5;
                 if(currentLanguage != newLang){
-                    buttonpressed =true;
                     worker.run();
                     currentLanguage =newLang;
 
@@ -178,7 +175,12 @@ public class MetafacetContainer extends JFrame implements ThreadCompleteListener
     @Override
     public void notifyOfThreadComplete(HeaderDownloadThread thread) {
         headers = worker.getHeaders();
-        createJson();
+        PlatformImpl.startup(
+            new Runnable() {
+                public void run() {
+                    createJson();
+                    
+            }});
     }
   
 }

@@ -44,17 +44,13 @@ public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
     private static HashMap< String, String> headers = new HashMap<String, String>();
     private static String json ="[{key: \"test\", values:5},{key: \"t1\", values:2}]";
     private static boolean first = true;
-    private static WebEngine engine;
-    private static Button btn;
     private static ConcordanceVector vec;
-    private  static VectorManager vMan;
     private HeaderDownloadThread headerThread = null;
     private HeaderProducer headerProducer = null;
     private Thread thread;
     private JFrame frame=null;
-    private final Object lock = new Object();
     private MetafacetContainer meta = null;
-    private String dirName ="MetaFacetCache";
+    private String dirName = System.getProperty("user.home") + File.separator+"GOKCache" + File.separator+"MetaFacetCache";
     JProgressBar b; 
     private BufferedReader input;
     private String serverStartdate;
@@ -121,8 +117,6 @@ public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
         headerThread.setEncoding(parent.getEncoding());
         headerThread.start();
         //pause while downloading
-
-
      
     }
   }   
@@ -148,7 +142,7 @@ public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
         if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
                     newLang = 5;
         
-        String filename = dirName+"/language"+newLang+parent.getRemoteServer()+"metadata.out";
+        String filename = dirName + File.separator+"language"+newLang+parent.getRemoteServer()+"metadata.out";
         //setup
         FileInputStream fis = null;
         ObjectInputStream in = null;
@@ -170,8 +164,6 @@ public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
                 e.printStackTrace();
             }
         }
-//        System.out.println(cacheDate);
-//        System.out.println(serverDate);
         
         //if the corpus-language headers have been downloaded
         //and the cache is valid
@@ -230,7 +222,10 @@ public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
          if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
                     newLang = 5;
         try {
-            String filename = dirName+"/language"+newLang+parent.getRemoteServer()+"metadata.out";
+            File directory = new File(dirName);
+            if(!directory.exists())
+                directory.mkdirs();
+            String filename = dirName + File.separator+"language"+newLang+parent.getRemoteServer()+"metadata.out";
             fos = new FileOutputStream(filename);
             out = new ObjectOutputStream(fos);
             out.writeObject(headers);
@@ -287,7 +282,7 @@ public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
         FileOutputStream fos = null;
         ObjectOutputStream out = null;
         try {
-            String filename = dirName+"/cdate"+parent.getRemoteServer()+".out";
+            String filename = dirName + File.separator+"cdate"+parent.getRemoteServer()+".out";
             fos = new FileOutputStream(filename);
             out = new ObjectOutputStream(fos);
             Date today = Calendar.getInstance().getTime();        
@@ -300,11 +295,11 @@ public class Metafacet implements Plugin, Runnable, ThreadCompleteListener{
         }
     }
     
-     private String getCachedDate() {
+     private String getCachedDate() { 
         String result = "";
         FileInputStream fis = null;
         ObjectInputStream in = null;
-        String filename = dirName+"/cdate"+parent.getRemoteServer()+".out";
+        String filename = dirName + File.separator+"cdate"+parent.getRemoteServer()+".out";
         File test = new File(filename);
         if(test.exists()){
             try{
