@@ -167,7 +167,6 @@ public class ComFre implements Plugin, Runnable, ThreadCompleteListener{
             dlFile2 ="";
             dl1.run();
         }else{
-            System.out.println("drAW");
             vis.Redraw(pathf1, pathf2);
         }
     }
