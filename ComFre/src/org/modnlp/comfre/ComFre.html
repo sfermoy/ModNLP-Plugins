@@ -198,6 +198,9 @@ function setup(){
  svgM = d3.select("body").append("svg")
     .attr("width", widthMid + marginMid.left + marginMid.right)
     .attr("height", height + marginMid.top + marginMid.bottom)
+    .call(d3.behavior.zoom().on("zoom", function () {
+    svgM.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+  }))
   .append("g")
     .attr("transform", "translate(" + marginMid.left + "," + marginMid.top + ")");
 
