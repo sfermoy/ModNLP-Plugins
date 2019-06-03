@@ -219,7 +219,7 @@ public class FqListDownloader implements Runnable{
   public final void addListener(final ThreadCompleteListener listener) {
     listeners.add(listener);
   }
-  public final void removeListener(final org.modnlp.metafacet.ThreadCompleteListener listener) {
+  public final void removeListener(final ThreadCompleteListener listener) {
     listeners.remove(listener);
   }
   private final void notifyListeners() {

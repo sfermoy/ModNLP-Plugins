@@ -2,9 +2,9 @@ all: jar
 .PHONY: lib clean sign
 
 TARGET_JAR=lib/comfre.jar
-CLASSPATH=src:../../src:lib/colt.jar:lib/prefuse.jar:lib/je.jar:lib/idx.jar:lib/teccli.jar:lib/jxbrowser-6.19.1.jar:lib/xbrowser-linux64-6.19.1.jar:lib/jxbrowser-win32-6.19.1.jar:lib/jxbrowser-mac-6.19.1.jar:lib/license.jar
+CLASSPATH=src:../../src:lib/colt.jar:lib/prefuse.jar:lib/je.jar:lib/idx.jar:lib/teccli.jar:lib/jxbrowser-6.19.1.jar:lib/xbrowser-linux64-6.19.1.jar:lib/jxbrowser-win32-6.19.1.jar:lib/jxbrowser-mac-6.19.1.jar:lib/license.jar #:../../lib/metafacet.jar
 JAVACFLAGS=-g -d classes -classpath $(CLASSPATH) 
-JAVAC=javac
+JAVAC=/usr/lib/jvm/java-8-oracle/bin/javac
 JAR=jar
 JARFLAGS= cvmf comfre.mf 
 JARREDS=.

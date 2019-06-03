@@ -39,7 +39,7 @@ import javax.swing.JOptionPane;
 import modnlp.tec.client.ConcordanceBrowser;
 import modnlp.tec.client.Plugin;
 import modnlp.tec.client.TecClientRequest;
-import org.modnlp.metafacet.HeaderDownloadThread;
+import modnlp.tec.client.HeaderDownloadThread;
 
 public class ComFre implements Plugin, Runnable, ThreadCompleteListener{
     
