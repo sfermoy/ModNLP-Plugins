@@ -115,14 +115,22 @@ public class FqListDownloader implements Runnable{
                   continue;
               orow[3] = new Float((float)(new Integer(row[2])).intValue()/notokens);
               model.addRow(orow);
+              dldCount++;
+              System.out.println(dldCount);
+              System.out.println(Math.round(ttratio*notokens));
+              System.out.println(ttratio*notokens);
+              if (dldCount ==Math.round(ttratio*notokens) ){
+                  System.out.println(ttratio*notokens);
+                  break;
+              }
+                  
             }
         }
-
-      saveCSV();
-      stop();
-      System.err.println("Fq list downloaded");
-      notifyListeners();
       
+      saveCSV();
+      System.err.println("Fq list downloaded");
+      stop();  
+      notifyListeners();
     }
     catch (Exception e)
       {
@@ -130,6 +138,7 @@ public class FqListDownloader implements Runnable{
         System.err.println("Line: |" + textLine+"|");
         e.printStackTrace();
       }
+    
   }
 
   public void start() {
@@ -149,8 +158,7 @@ public class FqListDownloader implements Runnable{
         //if (parent.isSubCorpusSelectionON()){
         rq.put("skipfirst",""+skipFirst);
         rq.put("maxlistsize",""+maxListSize);
-        if (parent.isSubCorpusSelectionON())
-          rq.put("xquerywhere",xqueryStr); 
+        rq.put("xquerywhere",xqueryStr); 
         rq.put("casesensitive",parent.isCaseSensitive()?"TRUE":"FALSE");
         //}
         rq.setServerProgramPath("/freqlist");
@@ -233,14 +241,11 @@ public class FqListDownloader implements Runnable{
       try {
         if (parent.isStandAlone()){
           Dictionary d = parent.getDictionary();
-          if (parent.subCorpusSelected()){
             HeaderDBManager hdbm = parent.getHeaderDBManager();
             d.printSortedFreqList(fqlout, skipFirst, maxListSize,
                                   hdbm.getSubcorpusConstraints(xqueryStr),
                                   !parent.isCaseSensitive());
-          }
-          else
-            d.printSortedFreqList(fqlout,  skipFirst, maxListSize,!parent.isCaseSensitive());
+          
         } 
         else{
           input = new
