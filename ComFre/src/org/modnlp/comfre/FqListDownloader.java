@@ -116,11 +116,7 @@ public class FqListDownloader implements Runnable{
               orow[3] = new Float((float)(new Integer(row[2])).intValue()/notokens);
               model.addRow(orow);
               dldCount++;
-              System.out.println(dldCount);
-              System.out.println(Math.round(ttratio*notokens));
-              System.out.println(ttratio*notokens);
               if (dldCount ==Math.round(ttratio*notokens) ){
-                  System.out.println(ttratio*notokens);
                   break;
               }
                   
