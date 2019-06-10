@@ -37,10 +37,9 @@ import modnlp.tec.client.ConcordanceBrowser;
 import modnlp.tec.client.ConcordanceObject;
 import modnlp.tec.client.ConcordanceVector;
 import netscape.javascript.JSObject;
-import modnlp.tec.client.cache.header.HeaderDownloadThread;
-import modnlp.tec.client.cache.header.HeaderCompleteListener;
+import modnlp.tec.client.HeaderDownloadThread;
 
-public class MetafacetContainer extends JFrame implements HeaderCompleteListener{
+public class MetafacetContainer extends JFrame implements modnlp.tec.client.ThreadCompleteListener{
     private static ConcordanceBrowser parent = null;
     private JFrame frame;
     private static HashMap< String, String> headers = null;

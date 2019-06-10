@@ -17,7 +17,6 @@
  */
 package org.modnlp.comfre;
 
-import modnlp.tec.client.cache.frequency.FqListDownloader;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,6 +29,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import javafx.collections.FXCollections;
@@ -39,9 +39,9 @@ import javax.swing.JOptionPane;
 import modnlp.tec.client.ConcordanceBrowser;
 import modnlp.tec.client.Plugin;
 import modnlp.tec.client.TecClientRequest;
-import modnlp.tec.client.cache.frequency.FqThreadCompleteListener;
+import modnlp.tec.client.HeaderDownloadThread;
 
-public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
+public class ComFre implements Plugin, Runnable, ThreadCompleteListener{
     
     ConcordanceBrowser parent =null;
     private BufferedReader input;
@@ -62,7 +62,6 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
     
     private FqListDownloader dl;
     ComFreContainer vis;
-    private int filesDled = 0;
     
     
     @Override
@@ -105,7 +104,6 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
     
     
     public void buildVis(String f1, String f2) {
-        
         dlFile1 ="";
         dlFile2 ="";
         String f1Query = getXquery(f1);
@@ -114,7 +112,6 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
         pathf2 = dirName + File.separator+"file"+f2Query.hashCode()+".csv";
         File file1 = new File(pathf1);
         File file2 = new File(pathf2);
-        FqListDownloader dl2 = null;
         
         if( file1.exists() && file2.exists()){ //both fqlists already downloaded
                 //redraw using the xquery string.csv
@@ -123,23 +120,16 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
             if (!file1.exists() && !file2.exists()){//both fqlists not downloaded
                dlFile1 = f1Query;
                dlFile2 = f2Query;
-               filesDled =0;
-               dl2 = new FqListDownloader(parent,dlFile2);
-               dl2.addListener(this);
             }
             else if (file1.exists() && !file2.exists()){//1 fqlist downloaded
                dlFile1 = f2Query;
-               filesDled =1;
             }
             else{
                dlFile1 = f1Query;
-               filesDled=1;
             }   
            FqListDownloader dl = new FqListDownloader(parent,dlFile1);
            dl.addListener(this);
            dl.run();
-           if(dl2 != null)
-               dl2.run();
         }
     }
      
@@ -171,11 +161,14 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
 
     @Override
     public void notifyOfThreadComplete(FqListDownloader thread) {
-        filesDled++;
-        if(filesDled == 2)
+        if(!dlFile2.equalsIgnoreCase("")){
+            FqListDownloader dl1  = new FqListDownloader(parent,dlFile2);
+            dl1.addListener(this);
+            dlFile2 ="";
+            dl1.run();
+        }else{
             vis.Redraw(pathf1, pathf2);
-        else
-            System.err.println("Waiting on second thread");
+        }
     }
 
     

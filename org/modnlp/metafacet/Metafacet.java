@@ -32,14 +32,14 @@ import modnlp.tec.client.ConcordanceVector;
 import modnlp.tec.client.HeaderProducer;
 import modnlp.tec.client.Plugin;
 import modnlp.tec.client.TecClientRequest;
-import modnlp.tec.client.cache.header.HeaderDownloadThread;
-import modnlp.tec.client.cache.header.HeaderCompleteListener;
+import modnlp.tec.client.HeaderDownloadThread;
+import modnlp.tec.client.ThreadCompleteListener;
 
 /**
  *
  * @author shane
  */
-public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
+public class Metafacet implements Plugin, Runnable, modnlp.tec.client.ThreadCompleteListener{
     
     private static ConcordanceBrowser parent = null;
 

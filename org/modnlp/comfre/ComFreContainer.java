@@ -23,7 +23,7 @@ import javafx.scene.web.WebView;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import modnlp.tec.client.ConcordanceBrowser;
-import modnlp.tec.client.cache.header.HeaderDownloadThread;
+import modnlp.tec.client.HeaderDownloadThread;
 
 /**
  *
