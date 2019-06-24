@@ -108,6 +108,7 @@ public class ConcordanceMosaic extends JFrame
   private VisualItem selected = null;
   private Color selectedColor = null;
   private Map<Integer, ArrayList<VisualItem>> sentenceIndexToVisualitems = null;
+  private Map<String, ArrayList<VisualItem>> wordToVisualitems = null;
   private TecClientRequest clRequest = new TecClientRequest();
   private TecClientRequest totRequest = new TecClientRequest();
   
@@ -135,6 +136,10 @@ public class ConcordanceMosaic extends JFrame
 
   public ArrayList<VisualItem> getVisualItemsInSentence(Integer i) {
     return sentenceIndexToVisualitems.get(i);
+  }
+  
+   public ArrayList<VisualItem> getVisualItemsOfWord(String w) {
+    return wordToVisualitems.get(w);
   }
   
   // plugin interface method
@@ -407,6 +412,7 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
 
         
         sentenceIndexToVisualitems = new HashMap<Integer, ArrayList<VisualItem>>();
+        wordToVisualitems = new HashMap<String, ArrayList<VisualItem>>();
         Tokeniser ss;
         int la = parent.getLanguage();
         
@@ -740,6 +746,7 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
         setDisplay();
         //add Visual item to hashmap with index of sentence numbers
         makeHashMap();
+        makeWordHashMap();
       } // end try
       catch (Exception ex) {
         ex.printStackTrace(System.err);
@@ -765,6 +772,25 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
         temp.add((VisualItem) item);
         sentenceIndexToVisualitems.put(index, temp);
       }
+    }
+  }
+  private void makeWordHashMap() {
+    TupleSet ts = vis.getVisualGroup("graph.nodes");
+    
+    //Iterator iter = ts.tuples();
+    for (Iterator iter = ts.tuples(); iter.hasNext();) {
+      VisualItem item = (VisualItem) iter.next();
+      String word = ((String) item.get("word"));
+      ArrayList temp;
+      if (wordToVisualitems.containsKey(word)) {
+          temp = wordToVisualitems.get(word);
+        } else {
+          temp = new ArrayList();
+        }
+        temp.add((VisualItem) item);
+        wordToVisualitems.put(word, temp);
+      
+    
     }
   }
   

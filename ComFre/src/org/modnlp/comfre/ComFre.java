@@ -123,23 +123,16 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
             if (!file1.exists() && !file2.exists()){//both fqlists not downloaded
                dlFile1 = f1Query;
                dlFile2 = f2Query;
-               filesDled =0;
-               dl2 = new FqListDownloader(parent,dlFile2);
-               dl2.addListener(this);
             }
             else if (file1.exists() && !file2.exists()){//1 fqlist downloaded
                dlFile1 = f2Query;
-               filesDled =1;
             }
             else{
                dlFile1 = f1Query;
-               filesDled=1;
             }   
            FqListDownloader dl = new FqListDownloader(parent,dlFile1);
            dl.addListener(this);
            dl.run();
-           if(dl2 != null)
-               dl2.run();
         }
     }
      
@@ -171,11 +164,14 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
 
     @Override
     public void notifyOfThreadComplete(FqListDownloader thread) {
-        filesDled++;
-        if(filesDled == 2)
+        if(!dlFile2.equalsIgnoreCase("")){
+            FqListDownloader dl1  = new FqListDownloader(parent,dlFile2);
+            dl1.addListener(this);
+            dlFile2 ="";
+            dl1.run();
+        }else{
             vis.Redraw(pathf1, pathf2);
-        else
-            System.err.println("Waiting on second thread");
+        }
     }
 
     

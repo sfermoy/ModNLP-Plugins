@@ -65,7 +65,7 @@
 <!--
 
  Placed at the end of the document so the pages load faster -->
-<!--<<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>-->
+<<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
 <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
 <script type="text/javascript" src="simpleSlider.js"></script>
 <script type='text/javascript'>
@@ -92,10 +92,14 @@
     svgM.selectAll("*").remove();
     svgR.selectAll("*").remove();
     svgSlider.selectAll("*").remove();
+    TokensGok = 0;
+    maxRankLeft = 0;
+    TokensModern = 0;
+    maxRankRight = 0;
+    myMap = new Map();
 
 	d3.csv(file1, function(error, data) {
-            TokensGok = 0;
-	    maxRankLeft = 0;
+
 	  data.forEach(function(d) {
 	    maxRankLeft++;
 	    d.Frequency = +d.Frequency;
@@ -103,19 +107,20 @@
 	      TokensGok += d.Frequency;
 	    d.Word = d.Type;
 	    d.Type = maxRankLeft;
+            
 	  });
 
 	d3.csv(file2, function(error, dataRight) {
-	    TokensModern = 0;
-	    maxRankRight = 0;
 	  dataRight.forEach(function(d) {
 	    maxRankRight++;
 	    d.Frequency = +d.Frequency;
-	    if(!isNaN(d.Frequency))
+	    if(!isNaN(d.Frequency)){
 	      TokensModern += d.Frequency;
+          }
 	    d.Word = d.Type;
 	    d.Type = maxRankRight;
 	    myMap.set(d.Word, [d.Frequency,d.Type]);
+    d.order = i;
 	  });
 
   	DrawVis(data,dataRight);
@@ -317,14 +322,17 @@ i=0;
 
 data.forEach(function(d) {     
     var relatedObject = myMap.get(d.Word);
+    var unef= "nope";
     if (typeof relatedObject === 'undefined'){
         d.Frequency1 = 0;
         d.Rank = maxRankRight;
+        unef="true"
     }else{
 
       d.Frequency1 = relatedObject[0];
       d.Rank = relatedObject[1];
     }  
+  
     d.diff = (y(d.Type)>yR(d.Rank)) ?  y(d.Type) - yR(d.Rank) :  yR(d.Rank) - y(d.Type) ;
     i++;
     d.order = i;

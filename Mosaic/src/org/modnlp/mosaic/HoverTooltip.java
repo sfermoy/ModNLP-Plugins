@@ -130,37 +130,94 @@ public class HoverTooltip extends ControlAdapter implements Control {
         //???*** right click to search word+[wildcards before]keyword or reverse for after
        
         if(e.getModifiers()==InputEvent.BUTTON3_MASK) {
-            int column = (Integer) item.get("column");
-            //if(column== 3 || column ==5){
-            if(column>0){
-                
-                String text = ((String) item.get("word"));
-                //middle column search
-                if (column == 4)
-                {
-                    System.out.println(text);
-                    p.requestConcordance(text);
-                }
-                
-                int position = 4- column;
-                if (position > 0){
-                    int rel_value = position - 1;
-                    String spaces = "+";
-                    for (int i = 0; i <rel_value; i++) {
-                        spaces+="*+";
+//            int column = (Integer) item.get("column");
+//            //if(column== 3 || column ==5){
+//            if(column>0){
+//                
+//                String text = ((String) item.get("word"));
+//                //middle column search
+//                if (column == 4)
+//                {
+//                    System.out.println(text);
+//                    p.requestConcordance(text);
+//                }
+//                
+//                int position = 4- column;
+//                if (position > 0){
+//                    int rel_value = position - 1;
+//                    String spaces = "+";
+//                    for (int i = 0; i <rel_value; i++) {
+//                        spaces+="*+";
+//                    }
+//                    
+//                   // p.requestConcordance(text+"+"+"["+rel_value+"]"+ themosaic.getKeyword());
+//                    p.requestConcordance(text+spaces+themosaic.getKeyword());
+//                }else{
+//                    int rel_value = Math.abs(position + 1);
+//                    String spaces = "+";
+//                    for (int i = 0; i <rel_value; i++) {
+//                        spaces+="*+";
+//                    }
+//                    p.requestConcordance(themosaic.getKeyword()+spaces+text);
+//                }
+//            }
+            
+            //RIght click to seleck same word
+            
+            if(item instanceof NodeItem){
+                VisualItem old = themosaic.getSelected();
+
+                if(old!=null){
+                    old.setStrokeColor(ColorLib.color(new Color(0.0f,0.0f,0.0f,0.0f)));
+                    old.setStroke(StrokeLib.getStroke(1));
+                    old.setFillColor(ColorLib.color(themosaic.getSelectedColor()));
+                    old.setHighlighted(false);
+                    for (VisualItem node : themosaic.getVisualItemsOfWord( (String) item.get("word") )) {
+                        node.setStrokeColor(ColorLib.color(new Color(0.0f,0.0f,0.0f,0.0f)));
+                        node.setStroke(StrokeLib.getStroke(1));
+                        node.setFillColor(node.getEndFillColor());
+                        node.setHighlighted(false);  
                     }
+                     v.repaint();
+                }
+                if(old!=item){
+                    themosaic.setSelectedColor(ColorLib.getColor(item.getFillColor()));
                     
-                   // p.requestConcordance(text+"+"+"["+rel_value+"]"+ themosaic.getKeyword());
-                    p.requestConcordance(text+spaces+themosaic.getKeyword());
-                }else{
-                    int rel_value = Math.abs(position + 1);
-                    String spaces = "+";
-                    for (int i = 0; i <rel_value; i++) {
-                        spaces+="*+";
+                    for (VisualItem node : themosaic.getVisualItemsOfWord( (String) item.get("word") )) {
+                        //node.setStroke(StrokeLib.getStroke(1));                
+                        node.setStrokeColor(ColorLib.color(Color.black));
+                        node.setFillColor(ColorLib.color(Color.WHITE.brighter()));  
+                        node.setHighlighted(true);
+                        if(!node.isInteractive())
+                            node.setFillColor(node.getEndFillColor());
                     }
-                    p.requestConcordance(themosaic.getKeyword()+spaces+text);
+                    item.setStroke(StrokeLib.getStroke(1));                
+                    item.setStrokeColor(ColorLib.color(Color.BLACK));
+                    item.setFillColor(ColorLib.color(Color.WHITE));     
+                    item.setHighlighted(true);
+
+                    themosaic.setSelected(item);
+                    String text = ((String) item.get("word"));
+                    if(p.getLanguage() == modnlp.Constants.LANG_AR){
+                        p.showContext(( 8 - (Integer)item.get("column")), text);
+                    }
+                    else
+                    {
+                        p.showContext((Integer)item.get("column"), text);
+                    }
+                    v.repaint();
+                }else{
+                    themosaic.setSelected(null);
+                    String text = ((String) item.get("word"));
+                    if(p.getLanguage() == modnlp.Constants.LANG_AR){
+                        p.showContext(( 8 - (Integer)item.get("column")), text);
+                    }
+                    else
+                    {
+                        p.showContext((Integer)item.get("column"), text);
+                    }
                 }
-            }
+                }
 
           }
         

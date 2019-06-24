@@ -103,8 +103,9 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
         if(meta !=null)
             headerThread.addListener(meta);
         headerThread.addListener(this);
-        headerThread.start();
         headerProducer.start();
+        headerThread.start();
+
         //pause while downloading  
     }
     else {
