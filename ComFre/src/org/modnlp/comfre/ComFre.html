@@ -57,15 +57,13 @@
 	<div id="area1">
 		<input id="SearchBox" type="text" placeholder ="Search words seperated by commas" value="" />
 	</div>
-  </body>
-</html>
+
 
 <!-- Le javascript
 ================================================== -->
 <!--
 
  Placed at the end of the document so the pages load faster -->
-<<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
 <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
 <script type="text/javascript" src="simpleSlider.js"></script>
 <script type='text/javascript'>
@@ -322,11 +320,9 @@ i=0;
 
 data.forEach(function(d) {     
     var relatedObject = myMap.get(d.Word);
-    var unef= "nope";
     if (typeof relatedObject === 'undefined'){
         d.Frequency1 = 0;
         d.Rank = maxRankRight;
-        unef="true"
     }else{
 
       d.Frequency1 = relatedObject[0];
@@ -511,6 +507,10 @@ dataRight = dataRight.filter(function(d){
 
 }
 </script>
+
+</body>
+</html>
+
 
 
 

@@ -34,6 +34,7 @@ import java.util.Calendar;
 import java.util.Date;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.stage.FileChooser;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import modnlp.tec.client.ConcordanceBrowser;
@@ -78,6 +79,7 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
         for (int i = 0; i < subcorpList.getItemCount(); i++) {
             options.add(subcorpList.getItem(i).getText());
         }
+        options.add("Load CSV");
          vis = new ComFreContainer(options,this);    
         serverStartdate = getServerStartDate();
         stop();
@@ -108,14 +110,36 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
         
         dlFile1 ="";
         dlFile2 ="";
-        String f1Query = getXquery(f1);
-        String f2Query = getXquery(f2);
-        pathf1 = dirName + File.separator+"file"+f1Query.hashCode()+".csv";
-        pathf2 = dirName + File.separator+"file"+f2Query.hashCode()+".csv";
-        File file1 = new File(pathf1);
-        File file2 = new File(pathf2);
-        FqListDownloader dl2 = null;
+        String f1Query ="";
+        String f2Query ="";
+        File file1;
+        File file2;
+        if(f1.equalsIgnoreCase("Load CSV")){
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Open Resource File");
+            file1 =fileChooser.showOpenDialog(null);
+            pathf1 = file1.getAbsolutePath();
+            System.out.println(pathf1);
+        }else{
+            f1Query= getXquery(f1);
+            pathf1 = dirName + File.separator+"file"+f1Query.hashCode()+".csv";
+         }
+         
+        if(f2.equalsIgnoreCase("Load CSV")){
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Open Resource File");
+            file2 =fileChooser.showOpenDialog(null);
+            pathf2 = file2.getAbsolutePath();
+            System.out.println(pathf2);
+        }else{
+            f2Query = getXquery(f2);
+            pathf2 = dirName + File.separator+"file"+f2Query.hashCode()+".csv";
+          }
         
+        file1 = new File(pathf1);
+        file2 = new File(pathf2);
+        FqListDownloader dl2 = null;
+                
         if( file1.exists() && file2.exists()){ //both fqlists already downloaded
                 //redraw using the xquery string.csv
             vis.Redraw(pathf1, pathf2);
