@@ -6,6 +6,7 @@
 package org.modnlp.comfre;
 
 import com.sun.javafx.application.PlatformImpl;
+import com.sun.javafx.webkit.WebConsoleListener;
 import java.awt.HeadlessException;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.JFXPanel;
@@ -22,8 +23,6 @@ import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import modnlp.tec.client.ConcordanceBrowser;
-import modnlp.tec.client.cache.header.HeaderDownloadThread;
 
 /**
  *
@@ -99,6 +98,13 @@ public class ComFreContainer extends JFrame {
                 // fire off other thread to see if the files exist
                 // if not download them
                 worker.buildVis((String)leftList.getSelectionModel().getSelectedItem(), (String)rightList.getSelectionModel().getSelectedItem());
+            }
+        });
+        
+        WebConsoleListener.setDefaultListener(new WebConsoleListener(){
+            @Override
+            public void messageAdded(WebView webView, String message, int lineNumber, String sourceId) {
+                System.out.println("Console: [" + sourceId + ":" + lineNumber + "] " + message);
             }
         });
         
