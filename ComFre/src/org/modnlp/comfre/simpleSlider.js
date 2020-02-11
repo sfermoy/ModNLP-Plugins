@@ -16,9 +16,8 @@ function simpleSlider (showaxis ) {
             .attr("x2", x + (width * value))
             .attr("y1", y)
             .attr("y2", y)
-            .style({"stroke": "#51CB3F",
-                    "stroke-linecap": "round",
-                    "stroke-width": 6 })
+            .style("stroke-linecap", "round")
+            .style("stroke-width", 6)
             .style("stroke", function(d) {  if (showaxis === 0) return "#ECECEC"; if (showaxis === 2) return "#ECECEC"; return "#51CB3F"; }) //"#51CB3F"
             .style("visibility", function(d) {  if (showaxis === 0) return "visable"; if (showaxis === 2) return "visable"; return "hidden"; });
 
@@ -28,15 +27,12 @@ function simpleSlider (showaxis ) {
             .attr("x2", x + width)
             .attr("y1", y)
             .attr("y2", y)
-            .style({
-                "stroke": "#ECECEC", //#ECECEC
-                "stroke-linecap": "round",
-                "stroke-width": 6
-            })
+            .style("stroke-linecap", "round")
+            .style("stroke-width", 6)
             .style("stroke", function(d) {  if (showaxis === 0) return color(4);if (showaxis === 2) return color(3);         return "#ECECEC"; ;}); //"#51CB3F"
             
 
-        var drag = d3.behavior.drag().on("drag", function() {
+        var drag = d3.drag().on("drag", function() {
             var newX = d3.mouse(this)[0];
 
             if (newX < x)
@@ -60,11 +56,9 @@ function simpleSlider (showaxis ) {
             .attr("cx", x + (width * value))
             .attr("cy", y)
             .attr("r", 8)
-            .style({
-                "stroke": "black",
-                "stroke-width": 1.0,
-                "fill": "white"
-            })
+            .style("stroke", "black")
+            .style("fill", "white")
+            .style("stroke-width", 1.0)
             .call(drag);
     }
 

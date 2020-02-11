@@ -7,13 +7,14 @@
     <meta name="description" content="Project repo">
     <meta name="author" content="Shane Sheehan">
 
-    <style type="text/css">
-      body {
-        padding-top: 20px;
-        padding-bottom: 40px;
-      }
-    </style>
+
 <style>
+
+.selected {
+  opacity: 1 !important;
+  stroke: black;
+  stroke-width: 1px;
+}
 	body {
 	  font: 10px sans-serif;
 	}
@@ -57,6 +58,7 @@
 	<div id="area1">
 		<input id="SearchBox" type="text" placeholder ="Search words seperated by commas" value="" />
 	</div>
+	<div id="block"></div>
 
 
 <!-- Le javascript
@@ -65,7 +67,7 @@
 
  Placed at the end of the document so the pages load faster -->
 
-<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
+<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
 <script type="text/javascript" src="simpleSlider.js"></script>
 <script type='text/javascript'>
 
@@ -78,9 +80,13 @@
  var maxRankRight = 0;
  var TokensModern = 0;
  var myMap = new Map();
- var margin, marginMid,x, y, xM, xR, yR, svgSlider, color, svg, svgM, svgR ;
+ var margin, marginMid,x, y, xM, xR, yR, svgSlider, color, svg, svgM, svgR, widthMid, heightMid ;
  var title1 = "Sample Pre-modern Corpus";
  var title2 = "Sample Modern Corpus";
+ var paths, lines;
+ var i=0;
+ 
+//var fisheye = d3.fisheye();
 
  function redrawVis(f1,f2 ){
     file1 = f1;
@@ -96,6 +102,7 @@
     TokensModern = 0;
     maxRankRight = 0;
     myMap = new Map();
+
 
 	d3.csv(file1, function(error, data) {
 
@@ -119,7 +126,7 @@
 	    d.Word = d.Type;
 	    d.Type = maxRankRight;
 	    myMap.set(d.Word, [d.Frequency,d.Type]);
-    d.order = i;
+            d.order = i;
 	  });
 
   	DrawVis(data,dataRight);
@@ -129,31 +136,31 @@
 
 setup();
 
-d3.csv(file1, function(error, data) {
-  data.forEach(function(d) {
-    maxRankLeft++;
-    d.Frequency = +d.Frequency;
-    if(!isNaN(d.Frequency))
-      TokensGok += d.Frequency;
-    d.Word = d.Type;
-    d.Type = maxRankLeft;
-  });
-
-d3.csv(file2, function(error, dataRight) {
-
-  dataRight.forEach(function(d) {
-    maxRankRight++;
-    d.Frequency = +d.Frequency;
-    if(!isNaN(d.Frequency))
-      TokensModern += d.Frequency;
-    d.Word = d.Type;
-    d.Type = maxRankRight;
-    myMap.set(d.Word, [d.Frequency,d.Type]);
-  });
-
-  DrawVis(data,dataRight);
-  });
-});
+//d3.csv(file1, function(error, data) {
+//  data.forEach(function(d) {
+//    maxRankLeft++;
+//    d.Frequency = +d.Frequency;
+//    if(!isNaN(d.Frequency))
+//      TokensGok += d.Frequency;
+//    d.Word = d.Type;
+//    d.Type = maxRankLeft;
+//  });
+//
+//d3.csv(file2, function(error, dataRight) {
+//
+//  dataRight.forEach(function(d) {
+//    maxRankRight++;
+//    d.Frequency = +d.Frequency;
+//    if(!isNaN(d.Frequency))
+//      TokensModern += d.Frequency;
+//    d.Word = d.Type;
+//    d.Type = maxRankRight;
+//    myMap.set(d.Word, [d.Frequency,d.Type]);
+//  });
+//
+//  DrawVis(data,dataRight);
+//  });
+//});
 
 function setup(){
  margin = {top: 10, right: 45, bottom: 30, left: 45},
@@ -165,20 +172,21 @@ function setup(){
     heightMid = 800 - marginMid.top - marginMid.bottom;
 
 
- x = d3.scale.log()
+    
+ x = d3.scaleLog()
     .range([ width,0]);
 
- y = d3.scale.log()
+ y = d3.scaleLog()
     .range([0,height]);
 
- xM = d3.scale.linear()
+ xM = d3.scaleLog()
     .domain([0,10])
     .range([0, widthMid]);
 
- xR = d3.scale.log()
+ xR = d3.scaleLog()
     .range([0,width]);     
 
- yR = d3.scale.log()
+ yR = d3.scaleLog()
     .range([0,height]);
 
  svgSlider = d3.select("#area1").append("svg").attr("width", 1050).attr("height", 60),
@@ -188,10 +196,9 @@ function setup(){
         slider4 = new simpleSlider(1);
 
 
+ color = d3.scaleOrdinal(d3.schemeCategory10);
 
- color = d3.scale.category10();
-
- svg = d3.select("body").append("svg")
+ svg = d3.select("#block").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
   .append("g")
@@ -199,27 +206,33 @@ function setup(){
 
 
 
- svgM = d3.select("body").append("svg")
+ svgM = d3.select("#block").append("svg")
     .attr("width", widthMid + marginMid.left + marginMid.right)
     .attr("height", height + marginMid.top + marginMid.bottom)
-    .call(d3.behavior.zoom().on("zoom", function () {
-    svgM.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
-  }))
+    
+    //    .call(d3.behavior.zoom().on("zoom", function () {
+//    svgM.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+//  }))
   .append("g")
     .attr("transform", "translate(" + marginMid.left + "," + marginMid.top + ")");
 
 
- svgR = d3.select("body").append("svg")
+ svgR = d3.select("#block").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    
+    
+
 
 return 1;
 }
 
 
 function DrawVis(data,dataRight){
+    
+
 
 svg.append("text")
         .attr("id", "title")  
@@ -255,28 +268,16 @@ svgR.append("text")
   yR.domain(d3.extent(dataRight, function(d) { return d.Type; }));
 
 
-  var xAxis = d3.svg.axis()
-      .scale(x)
-      .orient("bottom")
-      .ticks(0, ".1s");
+  var xAxis = d3.axisBottom(x).tickFormat(d3.format(".1s"));
 
-  var yAxis = d3.svg.axis()
-      .scale(y)
-      .orient("right")
-      .ticks(0, ".1s");
+  var yAxis = d3.axisRight(y).tickFormat(d3.format(".1s"));
 
-  var yAxisR = d3.svg.axis()
-      .scale(yR)
-      .orient("left")
-      .ticks(0, ".1s");
+  var yAxisR = d3.axisLeft(yR).tickFormat(d3.format(".1s"));
 
-  var xAxisR = d3.svg.axis()
-      .scale(xR)
-      .orient("bottom")
-      .ticks(0, ".1s");
+  var xAxisR = d3.axisBottom(xR).tickFormat(d3.format(".1s"));
 
 
-    svg.append("g")
+ svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis)
@@ -287,32 +288,32 @@ svgR.append("text")
         .style("text-anchor", "end")
         .text("Word Count");
 
-    svg.append("g")
+  var y_axis =   svg.append("g")
         .attr("class", "y axis")
         .attr("transform", "translate(" + width + ",0 )")
-        .call(yAxis)
-      .append("text")
+        .call(yAxis);
+
+      y_axis.append("text")
         .attr("class", "label")
         .attr("transform", "rotate(-90)")
         .attr("y", -12)
         .attr("dy", ".71em")
         .style("text-anchor", "end")
-        .text("Word Rank")
+        .text("Word Rank");
 
 
-   var lineFunction = d3.svg.line()
+   var lineFunction = d3.line()
                           .x(function(d) { return x(d.Frequency); })
                           .y(function(d) { return y(d.Type); })
-                           .interpolate("cardinal");
+                           .curve(d3.curveCatmullRom.alpha(0.5));
+   var leftLine = svg.append("path")
+					.attr("d", lineFunction(data))
+                    .attr("stroke", function(d) { return color(4); })
+                    .attr("stroke-width", 2)
+                    .attr("fill", "none");
 
-       svg.append("path")
-       .attr("d", lineFunction(data))
-                            .attr("stroke", function(d) { return color(4); })
-                            .attr("stroke-width", 2)
-                            .attr("fill", "none");
 
-
-  var valueline = d3.svg.line()
+  var valueline = d3.line()
       .x(function(d) { return d.x; })
       .y(function(d) { return d.y; });
 
@@ -354,31 +355,111 @@ dataRight = dataRight.filter(function(d){
 
 
   
-
+                    
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
 
     var max = d3.max(data, function(d) { return Math.abs(d.diff);} );
 
-    var lines = svgM.selectAll(".line")
+     lines = svgM.selectAll(".line")
         .data(data)
         .enter().append("g")
           .attr("class", "lines")
-          .style("visibility", "hidden");
+          .style("visibility", "hidden")
+          .call(d3.zoom().on("zoom", zoom));
 
-        lines.append("path")
+       paths =  lines.append("path")
             .attr("class", "line")
             .attr("d", function(d) { return valueline([ { "x": 75,   "y": y(d.Type)},  { "x": 273,  "y": yR(d.Rank)} ]);} )
             .attr("stroke-width", 2.2)
             .attr("stroke", function(d) {  if (y(d.Type)>=yR(d.Rank)) return color(3);; return color(4); ;})
+            .attr('pointer-events', 'visibleStroke')
             .append("svg:title")
                .text( function(d) { return" Freq A: " + Math.round(1000000*(d.Frequency/(TokensGok*1.0)))/10000 +"%    Freq B: " + Math.round(1000000*(d.Frequency1/(TokensModern*1.0)))/10000 + "%    \""+d.Word+"\"" });
 
-        lines.append("text")
+    var wordNodes = lines.append("text")
                .attr("y", function(d) { if (y(d.Type)>=yR(d.Rank)) return yR(d.Rank);; return y(d.Type); ; })
                   .attr("x", function(d) {  if (y(d.Type)>=yR(d.Rank)) return 278;; return 0; ;})
                    .text( function (d) { return d.Word})
                    .attr("font-family", "sans-serif")
                    .attr("font-size", "10px")
                    .attr("fill", "black");
+  
+
+
+    function zoom() {
+
+                   // re-scale y axis during zoom; ref [2]
+                   // y_axis.transition()
+                   //       .duration(50)
+                   //       .call(yAxis.scale(d3.event.transform.rescaleY(yScale)));
+
+                   // re-draw circles using new y-axis scale; ref [3]
+
+                   var new_yScale = d3.event.transform.rescaleY(y);
+                   var new_yRScale = d3.event.transform.rescaleY(yR);
+
+                   y_axis.transition()
+                         .duration(50)
+                         .call(yAxis.scale(new_yScale));
+
+                   yR_axis.transition()
+                         .duration(50)
+                         .call(yAxisR.scale(new_yRScale));
+                    
+                    lineFunctionR.y(function(d) { return new_yRScale(d.Type); });
+					rightLine.attr("d", lineFunctionR(dataRight));
+
+					lineFunction.y(function(d) { return new_yScale(d.Type); });
+					leftLine.attr("d", lineFunction(data));
+
+					paths.data(data)
+					.attr("d", function(d) { return valueline([ { "x": 75,   "y": new_yScale(d.Type)},  { "x": 273,  "y": new_yRScale(d.Rank)} ]);} );
+
+					//var yfunction = function(d) { if (new_yScale(d.Type)>=new_yRScale (d.Rank)) return new_yRScale (d.Rank);; return new_yScale(d.Type); ;}
+
+					//wordNodes.attr("y", yfunction(data))
+
+                    //lines.selectAll(".line").remove();
+
+              //       paths = lines.append("path")
+		            // .attr("class", "line")
+		            // .attr("d", function(d) { return valueline([ { "x": 75,   "y": new_yScale(d.Type)},  { "x": 273,  "y": new_yRScale(d.Rank)} ]);} )
+		            // .attr("stroke-width", 2.2)
+		            // .attr("stroke", function(d) {  if (y(d.Type)>=yR(d.Rank)) return color(3);; return color(4); ;})
+		            // .attr('pointer-events', 'visibleStroke')
+		            // .append("svg:title")
+		            //    .text( function(d) { return" Freq A: " + Math.round(1000000*(d.Frequency/(TokensGok*1.0)))/10000 +"%    Freq B: " + Math.round(1000000*(d.Frequency1/(TokensModern*1.0)))/10000 + "%    \""+d.Word+"\"" });
+
+
+               }
+               //     .on("mouseover",function() {
+               			
+               //     		var mp =d3.mouse(this);
+               // 			svgM.selectAll("text").each(function(d) {  
+               // 				var sel = d3.select(this);
+               // 				var obj = [sel.attr("x"), sel.attr("y")];
+               // 				console.log();
+               // 	// 			var dx = d[0] - center[0],
+          					// 	// dy = d[1] - center[1],
+          					// 	// dd = Math.sqrt(dx * dx + dy * dy);
+               // 				var fish = fisheye(obj);
+               				
+               // 			})
+                    	
+               //      	// console.error(sel.attr("y"));
+               //      	// var obj = [sel.attr("x"), sel.attr("y")]
+               //      	// console.error(obj[0]);
+               //       //    console.error(fisheye(obj));
+               //       //    console.error(fisheye(obj)[0]);
+               //       //    sel.attr("stroke","green")
+               //       //    .attr("y",function(d) { return fisheye(obj)[1]; });
+
+               //      	// sel.moveToFront();
+               // });
 
   var NotTopL = lines.filter(function(d){
           if(Math.abs(d.diff) >= 0 * max && Math.abs(d.diff) <= max){
@@ -482,10 +563,11 @@ dataRight = dataRight.filter(function(d){
         .style("text-anchor", "end")
         .text("Word Count");
 
-    svgR.append("g")
+   var yR_axis = svgR.append("g")
         .attr("class", "y axis")
-        .call(yAxisR)
-      .append("text")
+        .call(yAxisR);
+
+        yR_axis.append("text")
         .attr("class", "label")
         .attr("transform", "rotate(-90)")
         .attr("y", 6)
@@ -495,22 +577,43 @@ dataRight = dataRight.filter(function(d){
 
 
 
-   var lineFunctionR = d3.svg.line()
+   var lineFunctionR = d3.line()
                           .x(function(d) { return xR(d.Frequency); })
                           .y(function(d) { return yR(d.Type); })
-                           .interpolate("basis");
+                           .curve(d3.curveCatmullRom.alpha(0.5));
 
-    svgR.append("path")
+    var rightLine = svgR.append("path")
        .attr("d", lineFunctionR(dataRight))
                             .attr("stroke", function(d) { return color(3); })
                             .attr("stroke-width", 2)
                             .attr("fill", "none");
 
+
+//    svgM.call( d3.brush()                 // Add the brush feature using the d3.brush function
+//       .extent( [ [0,0], [widthMid,heightMid] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+//       .on("start brush", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
+//     )
+
+// function updateChart() {
+//     extent = d3.event.selection
+//     // myCircle.classed("selected", function(d){ return isBrushed(extent, x(d.Sepal_Length), y(d.Petal_Length) ) } )
+//   }
+
+  // A function that return TRUE or FALSE according if a dot is in the selection or not
+  // function isBrushed(brush_coords, cx, cy) {
+  //      var x0 = brush_coords[0][0],
+  //          x1 = brush_coords[1][0],
+  //          y0 = brush_coords[0][1],
+  //          y1 = brush_coords[1][1];
+  //     return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
+  // }
+
+  
+
+
 }
 </script>
 
-<script type='text/javascript'
-     src='https://cdnjs.cloudflare.com/ajax/libs/firebug-lite/1.4.0/firebug-lite.js'></script>
 </body>
 </html>
 
