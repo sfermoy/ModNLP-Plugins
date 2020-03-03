@@ -56,6 +56,8 @@
 	</div>
 	<br> -->
 	<div id="area1">
+            <div><h2>Please select two named sub-corpora from the dropdowns. Then click the "draw" button.<br> 
+                    You can create named sub-corpora using the sub-corpus tool available in the main concordance browser window. (ZOOM using + and -)</h2></div>
 		<input id="SearchBox" type="text" placeholder ="Search words seperated by commas" value="" />
 	</div>
 	<div id="block"></div>
@@ -69,6 +71,8 @@
 
 <script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
 <script type="text/javascript" src="simpleSlider.js"></script>
+<!--<script type='text/javascript'
+     src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>-->
 <script type='text/javascript'>
 
  var file1 ="permoderngok.csv";
@@ -102,65 +106,40 @@
     TokensModern = 0;
     maxRankRight = 0;
     myMap = new Map();
+    
+    //vec.log(file1);
 
+    var data = d3.csvParse(file1);
 
-	d3.csv(file1, function(error, data) {
+      data.forEach(function(d) {
+        maxRankLeft++;
+        d.Frequency = +d.Frequency;
+        if(!isNaN(d.Frequency))
+          TokensGok += d.Frequency;
+        d.Word = d.Type;
+        d.Type = maxRankLeft;
 
-	  data.forEach(function(d) {
-	    maxRankLeft++;
-	    d.Frequency = +d.Frequency;
-	    if(!isNaN(d.Frequency))
-	      TokensGok += d.Frequency;
-	    d.Word = d.Type;
-	    d.Type = maxRankLeft;
-            
-	  });
+      });
 
-	d3.csv(file2, function(error, dataRight) {
-	  dataRight.forEach(function(d) {
-	    maxRankRight++;
-	    d.Frequency = +d.Frequency;
-	    if(!isNaN(d.Frequency)){
-	      TokensModern += d.Frequency;
-          }
-	    d.Word = d.Type;
-	    d.Type = maxRankRight;
-	    myMap.set(d.Word, [d.Frequency,d.Type]);
-            d.order = i;
-	  });
+    var dataRight = d3.csvParse(file2);
 
-  	DrawVis(data,dataRight);
-	    });
-	});
+      dataRight.forEach(function(d) {
+        maxRankRight++;
+        d.Frequency = +d.Frequency;
+        if(!isNaN(d.Frequency)){
+          TokensModern += d.Frequency;
+      }
+        d.Word = d.Type;
+        d.Type = maxRankRight;
+        myMap.set(d.Word, [d.Frequency,d.Type]);
+        d.order = i;
+      });
+
+    DrawVis(data,dataRight);
+	
 }
 
 setup();
-
-//d3.csv(file1, function(error, data) {
-//  data.forEach(function(d) {
-//    maxRankLeft++;
-//    d.Frequency = +d.Frequency;
-//    if(!isNaN(d.Frequency))
-//      TokensGok += d.Frequency;
-//    d.Word = d.Type;
-//    d.Type = maxRankLeft;
-//  });
-//
-//d3.csv(file2, function(error, dataRight) {
-//
-//  dataRight.forEach(function(d) {
-//    maxRankRight++;
-//    d.Frequency = +d.Frequency;
-//    if(!isNaN(d.Frequency))
-//      TokensModern += d.Frequency;
-//    d.Word = d.Type;
-//    d.Type = maxRankRight;
-//    myMap.set(d.Word, [d.Frequency,d.Type]);
-//  });
-//
-//  DrawVis(data,dataRight);
-//  });
-//});
 
 function setup(){
  margin = {top: 10, right: 45, bottom: 30, left: 45},
@@ -588,7 +567,6 @@ d3.selection.prototype.moveToFront = function() {
                             .attr("stroke-width", 2)
                             .attr("fill", "none");
 
-
 //    svgM.call( d3.brush()                 // Add the brush feature using the d3.brush function
 //       .extent( [ [0,0], [widthMid,heightMid] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
 //       .on("start brush", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
@@ -608,8 +586,16 @@ d3.selection.prototype.moveToFront = function() {
   //     return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
   // }
 
-  
+}
 
+
+function loadFiles(arr1, arr2){
+    var find = '*SPACE*';
+    var str1 = arr1[0].split("*SPACE*").join("\n");
+    var str2 = arr2[0].split("*SPACE*").join("\n");
+//    vec.log(str1)
+//    vec.log(str2)
+    redrawVis(str1,str2)
 
 }
 </script>
