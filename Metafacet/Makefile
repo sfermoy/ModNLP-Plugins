@@ -9,6 +9,19 @@ JAR=jar
 JARFLAGS= cvmf metafacet.mf 
 JARREDS=.
 
+## cert signing
+TIMESAUTH=http://tsa.starfieldtech.com
+#http://timestamp.verisign.com/scripts/timestamp.dll
+#TIMESAUTH=http://timestamp.comodoca.com
+KEYSTORE=../../security/gok-keystore
+JARSIGNER=jarsigner
+##  COMODO cert
+#JARSIGNER_OPT=-tsa $(TIMESAUTH) -storetype pkcs12 -keystore ../gok-cert.pkcs.p12 -storepass `cat ../gok.cert.pass`
+## Our own cert (CA needs to be imported into javaws)
+JARSIGNER_OPT=-tsa $(TIMESAUTH) -keystore $(KEYSTORE) -storepass `cat ../gok.cert.pass` 
+CERT_ALIAS=gok
+
+
 class:
 	$(JAVAC) $(JAVACFLAGS) src/org/modnlp/metafacet/*.java 
 #	cp src/org/modnlp/metafacet/*.js classes/org/modnlp/metafacet/
@@ -20,5 +33,6 @@ jar: class
 #java -jar ../autojar.jar -o $(TARGET_JAR) -vc classes -b  org/modnlp/metafacet/*.class
 
 sign: jar
+	$(JARSIGNER) $(JARSIGNER_OPT) $(TARGET_JAR) gok
 #	jarsigner -keystore .keystore -storepass `cat tecplugin.cer.pass` $(TARGET_JAR) tecplugin
-	jarsigner  -tsa http://timestamp.comodoca.com -storetype pkcs12 -keystore ../gok-cert.pkcs.p12 -storepass `cat ../gok.cert.pass` $(TARGET_JAR) gok 
+#	jarsigner  -tsa http://timestamp.comodoca.com -storetype pkcs12 -keystore ../gok-cert.pkcs.p12 -storepass `cat ../gok.cert.pass` $(TARGET_JAR) gok 
