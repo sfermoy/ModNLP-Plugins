@@ -4,7 +4,8 @@ all: jar
 TARGET_JAR=lib/metafacet.jar
 CLASSPATH=src:../../src:lib/colt.jar:lib/prefuse.jar:lib/je.jar:lib/idx.jar:lib/teccli.jar:lib/jxbrowser-6.19.1.jar:lib/xbrowser-linux64-6.19.1.jar:lib/jxbrowser-win32-6.19.1.jar:lib/jxbrowser-mac-6.19.1.jar:lib/license.jar:/usr/lib/jvm/java-8-oracle/jre/lib/plugin.jar
 JAVACFLAGS=-g -d classes -classpath $(CLASSPATH) -encoding UTF-8
-JAVAC=/usr/lib/jvm/java-8-oracle/bin/javac ## openjdk doesn't seem to include javax
+#JAVAC=/usr/lib/jvm/java-8-oracle/bin/javac ## openjdk doesn't seem to include javax
+JAVAC=javac
 JAR=jar
 JARFLAGS= cvmf metafacet.mf 
 JARREDS=.

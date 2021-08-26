@@ -5,7 +5,8 @@
  */
 package org.modnlp.comfre;
 
-import com.sun.javafx.application.PlatformImpl;
+//import com.sun.javafx.application.PlatformImpl;
+import javafx.application.Platform;
 import java.awt.HeadlessException;
 import java.io.File;
 import java.io.IOException;
@@ -68,12 +69,12 @@ public class ComFreContainer extends JFrame {
         // This method is invoked on the JavaFX thread
         //cannot run in swing enviornment
 
-          PlatformImpl.startup(
+          Platform.runLater(
             new Runnable() {
                 public void run() {             
                     Scene scene = createScene();
                     fxPanel.setScene(scene);
-                    PlatformImpl.setImplicitExit(false);
+                    Platform.setImplicitExit(false);
                     
                 }});
     }
@@ -159,7 +160,7 @@ public class ComFreContainer extends JFrame {
         try{
             String str1 = readFile(f1);
             String str2 = readFile(f2);
-            PlatformImpl.startup(
+            Platform.runLater(
                 new Runnable() {
                     public void run() {
                      String out1 = str1;

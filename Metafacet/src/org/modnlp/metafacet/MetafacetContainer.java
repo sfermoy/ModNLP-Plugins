@@ -17,7 +17,8 @@
  */
 package org.modnlp.metafacet;
 
-import com.sun.javafx.application.PlatformImpl;
+//import com.sun.javafx.application.PlatformImpl;
+import javafx.application.Platform;
 import java.util.HashMap;
 import java.util.Iterator;
 import javafx.concurrent.Worker.State;
@@ -89,13 +90,13 @@ public class MetafacetContainer extends JFrame implements HeaderCompleteListener
         // This method is invoked on the JavaFX thread
         //cannot run in swing enviornment
 
-          PlatformImpl.startup(
+       Platform.runLater(
             new Runnable() {
                 public void run() {
                     
                     Scene scene = createScene();
                     fxPanel.setScene(scene);
-                    PlatformImpl.setImplicitExit(false);
+                    Platform.setImplicitExit(false);
                     
                 }});
           
@@ -163,13 +164,15 @@ public class MetafacetContainer extends JFrame implements HeaderCompleteListener
                     String fn = next.sfilename;
                     fn= fn.substring(0, fn.indexOf("."));
                     String key = fn+ next.sectionID;
-                    //System.out.println(key);
+                    //System.out.println("----->"+key);
                     if (iterator.hasNext()){
                         json += headers.getOrDefault(key, "Header missing error")+",";
                     }else
                         json += headers.getOrDefault(key, "Header missing error")+"]";
 
                 }
+                //System.err.println("loadData(" + json + ")");
+                
                 engine.executeScript("loadData(" + json + ")");
                 vMan.updateVector();
      }
@@ -177,7 +180,7 @@ public class MetafacetContainer extends JFrame implements HeaderCompleteListener
     @Override
     public void notifyOfThreadComplete(HeaderDownloadThread thread) {
         headers = worker.getHeaders();
-        PlatformImpl.startup(
+        Platform.runLater(
             new Runnable() {
                 public void run() {
                     createJson();
