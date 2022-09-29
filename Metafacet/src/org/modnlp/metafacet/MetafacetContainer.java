@@ -51,7 +51,7 @@ public class MetafacetContainer extends JFrame implements HeaderCompleteListener
     private static Button btn;
     private static ConcordanceVector vec;
     private  static VectorManager vMan;
-    private static int currentLanguage = 0;
+    private static int currentLanguage;
     private static Metafacet worker = null;
     
  public MetafacetContainer(Metafacet m,HashMap< String, String> h,String j,ConcordanceVector v, ConcordanceBrowser p ){
@@ -63,7 +63,7 @@ public class MetafacetContainer extends JFrame implements HeaderCompleteListener
         vec = v;
         parent=p;
         frame =this;
-        currentLanguage = parent.getLanguage();
+        currentLanguage = parent.getRemotePort();
         worker =m;
      
                 createFX();
@@ -119,13 +119,12 @@ public class MetafacetContainer extends JFrame implements HeaderCompleteListener
         btn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                int newLang = parent.getLanguage();
+                int port = parent.getRemotePort();
                 //workaround for greek not having a language constant 
-                if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
-                   newLang = 5;
-                if(currentLanguage != newLang){
+                
+                if(currentLanguage != port){
                     worker.run();
-                    currentLanguage =newLang;
+                    currentLanguage =port;
 
                 }else{
                     createJson();

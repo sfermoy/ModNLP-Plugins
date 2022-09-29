@@ -141,11 +141,11 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
     @Override
     public void run() {  
                //workaround for greek not having a language constant
-        int newLang = parent.getLanguage();
-        if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
-                    newLang = 5;
+//        int newLang = parent.getLanguage();
+//        if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
+//                    newLang = 5;
         
-        String filename = dirName + File.separator+"language"+newLang+parent.getRemoteServer()+"metadata.out";
+        String filename = dirName + File.separator + parent.getRemotePort() + parent.getRemoteServer() + "metadata.out";
         //setup
         FileInputStream fis = null;
         ObjectInputStream in = null;
@@ -156,7 +156,7 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
         //checkif cache exists
         String cacheDateStr = getCachedDate();
         if (cacheDateStr.equalsIgnoreCase("")  || serverStartdate.equalsIgnoreCase("") ){
-            cacheDate =Calendar.getInstance().getTime();
+            cacheDate = Calendar.getInstance().getTime();
             serverDate =Calendar.getInstance().getTime();
         }else{
             try{
@@ -175,7 +175,7 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
             try {
                 fis = new FileInputStream(filename);
                 in = new ObjectInputStream(fis);
-                headers= null;
+                headers = null;
                 headers = (HashMap< String, String>) in.readObject();
                 in.close();
                 makeJson();
@@ -221,14 +221,14 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
         ObjectOutputStream out = null;
         
         //workaround for greek not having a language constant
-        int newLang = parent.getLanguage();
-         if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
-                    newLang = 5;
+//        int newLang = parent.getLanguage();
+//         if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
+//                    newLang = 5;
         try {
             File directory = new File(dirName);
             if(!directory.exists())
                 directory.mkdirs();
-            String filename = dirName + File.separator+"language"+newLang+parent.getRemoteServer()+"metadata.out";
+            String filename = dirName + File.separator + parent.getRemotePort()+ parent.getRemoteServer() + "metadata.out";
             fos = new FileOutputStream(filename);
             out = new ObjectOutputStream(fos);
             out.writeObject(headers);

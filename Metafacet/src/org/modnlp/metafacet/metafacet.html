@@ -219,18 +219,10 @@ svg = d3.select("#chart").append("svg")
     .text("Sort by frequency");
     
     
-    var elements = ["Filename","Title", "Collection_Title", "Editor", "Author", "Publication_Date", "Authorship_Date", "Translator",
-        "Source_Date", "Source_Filename", "Source_Language", "Original_Title" ,"Outlet", "Internet_Outlet","Format"];
-    
-      selector.selectAll("option")
-      .data(elements)
-      .enter().append("option")
-      .attr("value", function(d){
-        return d;
-      })
-      .text(function(d){
-        return d;
-      });
+//    var elements = ["Filename","Title", "Collection_Title", "Editor", "Author", "Publication_Date", "Authorship_Date", "Translator",
+//        "Source_Date", "Source_Filename", "Source_Language", "Original_Title" ,"Outlet", "Internet_Outlet","Format"];
+        var elements = ["Filename","Title", "Collection_Title", "Editor", "Author"];
+      
     
 var tooltip = d3.select("body").append("div").attr("class", "toolTip");
 
@@ -240,6 +232,16 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
     /////////////////////////////////////////////////////////////
     ///////////////// Set-up SVG and wrappers ///////////////////
     /////////////////////////////////////////////////////////////
+    
+    selector.selectAll("option")
+      .data(elements)
+      .enter().append("option")
+      .attr("value", function(d){
+        return d;
+      })
+      .text(function(d){
+        return d;
+      });
 
 
     var mainGroup = svg.append("g")
@@ -411,6 +413,63 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
     //Start the brush
     gBrush.call(brush.event);
     brushmove();
+    
+    
+    var dragstartPos;
+    function dragStart() {
+            dragstartPos = d3.mouse(this);         
+        }
+        
+    function dragMove() {
+        var p = d3.mouse(this);
+        d3.select(".mainGroup").selectAll(".bar")
+            .each(function(b) {
+                var shouldRemove = false;
+                var yval = +d3.select(this).attr('y')
+                var shouldremove = false;
+                if (p[1] > dragstartPos[1])
+                    shouldremove = yval > dragstartPos[1] && yval < p[1];
+                if (p[1] < dragstartPos[1])
+                    shouldremove = yval < dragstartPos[1] && yval > p[1];
+                if(shouldremove ){
+                    var currentColor =  "red" ;                       
+                    var opacity =  0.3;
+                    d3.select(this).style("fill", currentColor);     
+                    d3.select(this).style("opacity", opacity);    
+            }
+      });
+  }
+          
+    function dragEnd() {
+        var p = d3.mouse(this);
+        d3.select(".mainGroup").selectAll(".bar")
+            .each(function(b) {
+                var yval = +d3.select(this).attr('y')
+                var shouldremove = false;
+                if (p[1] > dragstartPos[1])
+                    shouldremove = yval > dragstartPos[1] && yval < p[1];
+                if (p[1] < dragstartPos[1])
+                    shouldremove = yval < dragstartPos[1] && yval > p[1];
+                if(shouldremove ){
+                    var currentColor = "red" ;
+                    var opacity =  0.3 ;
+                    d3.select(this).style("fill", currentColor);     
+                    d3.select(this).style("opacity", opacity);
+                    remove(b.key);
+                 }
+               
+      });
+      vec.redisplay();
+    }
+
+        
+    var dragBehavior = d3.behavior.drag()
+    .on("dragstart", dragStart)
+    .on("drag", dragMove)
+    .on("dragend", dragEnd);
+
+    svg.call(dragBehavior);
+        
   }//init
 
   //Function runs on a brush move - to update the big bar chart
@@ -655,7 +714,9 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
          numConclines = initdata.length;
          removedKeys = new Set();
                 vec.updateVector();
-        dataProcess(attrSelected)
+        data = initdata[0];
+        elements = Object.keys(data);
+        dataProcess(elements[0]);
     }
     
     function dataProcess(attribute){
