@@ -45,7 +45,7 @@ ConcordanceVector OldVector;
         fn = fn.substring(0, fn.indexOf("."));
         //boolean delete = true; 
         if (fn.trim().equalsIgnoreCase( filename.trim()))
-            if (next.sectionID.trim().equalsIgnoreCase(section.trim()))
+            if (next.sectionID.trim().equalsIgnoreCase(section.trim())|| next.sectionID.trim().equalsIgnoreCase("ignore"))
                        parent.removeConcordanceLineOnly(next);
     }
 }
