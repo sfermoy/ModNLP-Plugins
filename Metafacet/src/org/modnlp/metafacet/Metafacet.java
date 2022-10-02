@@ -207,9 +207,20 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
             String key = fn+ next.sectionID;
             //System.out.println(key);
             if (iterator.hasNext()){
-                json += headers.getOrDefault(key, "error")+",";
-            }else
-                json += headers.getOrDefault(key, "error")+"]";            
+                if("error".equals(headers.getOrDefault(key, "error"))){
+                    key = fn+ "s1";
+                    json += headers.getOrDefault(key, "error")+",";
+                }
+                else
+                    json += headers.getOrDefault(key, "error")+",";
+            }else{
+                 if("error".equals(headers.getOrDefault(key, "error"))){
+                    key = fn+ "s1";
+                    json += headers.getOrDefault(key, "error")+"]";
+                 }
+                else
+                json += headers.getOrDefault(key, "error")+"]";    
+            }
         } 
     }
     

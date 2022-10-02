@@ -165,9 +165,20 @@ public class MetafacetContainer extends JFrame implements HeaderCompleteListener
                     String key = fn+ next.sectionID;
                     //System.out.println("----->"+key);
                     if (iterator.hasNext()){
-                        json += headers.getOrDefault(key, "Header missing error")+",";
-                    }else
-                        json += headers.getOrDefault(key, "Header missing error")+"]";
+                if("error".equals(headers.getOrDefault(key, "error"))){
+                    key = fn+ "s1";
+                    json += headers.getOrDefault(key, "error")+",";
+                }
+                else
+                    json += headers.getOrDefault(key, "error")+",";
+            }else{
+                 if("error".equals(headers.getOrDefault(key, "error"))){
+                    key = fn+ "s1";
+                    json += headers.getOrDefault(key, "error")+"]";
+                 }
+                else
+                json += headers.getOrDefault(key, "error")+"]";    
+            }
 
                 }
                 //System.err.println("loadData(" + json + ")");
