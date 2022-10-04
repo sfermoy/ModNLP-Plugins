@@ -45,7 +45,7 @@ ConcordanceVector OldVector;
         fn = fn.substring(0, fn.indexOf("."));
         //boolean delete = true; 
         if (fn.trim().equalsIgnoreCase( filename.trim()))
-            if (next.sectionID.trim().equalsIgnoreCase(section.trim())|| next.sectionID.trim().equalsIgnoreCase("ignore"))
+            if (next.sectionID.trim().equalsIgnoreCase(section.trim())|| section.equalsIgnoreCase("ignore"))
                        parent.removeConcordanceLineOnly(next);
     }
 }
@@ -65,7 +65,7 @@ public void addLine(String filename, String section){
         fn = fn.substring(0, fn.indexOf("."));
         //boolean delete = true; 
         if (fn.trim().equalsIgnoreCase( filename.trim()))
-            if (next.sectionID.trim().equalsIgnoreCase(section.trim())){
+            if (next.sectionID.trim().equalsIgnoreCase(section.trim()) || section.equalsIgnoreCase("ignore")){
                 if (!current.contains(next))
                        parent.addConcordanceLine(next);
             }
