@@ -189,7 +189,7 @@ public class ComFreContainer extends JFrame {
                 
                      //out1 = "tribe";
 //                    System.out.println("loadFiles([\""+out1+"\"],[2])");
-                    engine.executeScript("loadFiles([\""+out2+"\"],[\""+out2+"\"])");
+                    engine.executeScript("loadFiles([\""+out1+"\"],[\""+out2+"\"])");
                       
             }});
         }
