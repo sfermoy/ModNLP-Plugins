@@ -2,7 +2,7 @@ all: jar
 .PHONY: lib clean sign
 
 TARGET_JAR=lib/comfre.jar
-CLASSPATH=src:../../src:lib/colt.jar:lib/prefuse.jar:lib/je.jar:lib/idx.jar:lib/teccli.jar:lib/jxbrowser-6.19.1.jar:lib/xbrowser-linux64-6.19.1.jar:lib/jxbrowser-win32-6.19.1.jar:lib/jxbrowser-mac-6.19.1.jar:lib/license.jar:lib/commons-io-2.6.jar #:../../lib/metafacet.jar
+CLASSPATH=src:../../src:lib/colt.jar:lib/prefuse.jar:lib/je.jar:lib/idx.jar:lib/teccli.jar:lib/jxbrowser-6.19.1.jar:lib/xbrowser-linux64-6.19.1.jar:lib/jxbrowser-win32-6.19.1.jar:lib/jxbrowser-mac-6.19.1.jar:lib/license.jar:lib/commons-io.jar
 JAVACFLAGS=-g -d classes -classpath $(CLASSPATH) 
 #JAVA_BIN=/usr/lib/jvm/java-8-oracle/bin/
 JAVAC=$(JAVA_BIN)javac #/usr/lib/jvm/java-8-oracle/bin/javac
@@ -30,7 +30,7 @@ class:
 
 jar: class
 #	$(JAR) $(JARFLAGS) $(TARGET_JAR) -C classes $(JARREDS) 
-	java -jar ../autojar.jar -o $(TARGET_JAR) -vc lib/commons-io-2.6.jar:classes -b org/modnlp/comfre/* org/apache/commons/io/FileUtils.class
+	java -jar ../autojar.jar -o $(TARGET_JAR) -vc classes:$(CLASSPATH) -b org/modnlp/comfre/* org/apache/commons/io/FileUtils.class
 
 sign: jar
 	$(JARSIGNER) $(JARSIGNER_OPT) $(TARGET_JAR) gok
