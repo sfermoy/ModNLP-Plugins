@@ -459,7 +459,7 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
           }
           //reverse token order for arrabic
           if(parent.getLanguage() == modnlp.Constants.LANG_AR){
-              System.out.println("dsaddsdasdsdsadsadsadsacacsdcwdcwd");
+            // System.out.println("dsaddsdasdsdsadsadsadsacacsdcwdcwd");
             for(int i = 0; i < tkns.length / 2; i++)
             {
                 Object temp = tkns[i];
