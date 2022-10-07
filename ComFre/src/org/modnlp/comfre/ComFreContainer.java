@@ -10,6 +10,7 @@ import javafx.application.Platform;
 import java.awt.HeadlessException;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.JFXPanel;
@@ -22,7 +23,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
@@ -150,8 +150,18 @@ public class ComFreContainer extends JFrame {
         
         Scene scene = new Scene(root, 1100, 1000);
         root.getChildren().add(view);
+
+        try
+        {
+            URI html = new URI("");
+            html =ComFre.class.getResource("ComFre.html").toURI();
+            engine.load(html.toURL().toString());
+                }
+        catch(Exception e){
+//            html ="error loading html";
+        }
         
-        engine.load(ComFre.class.getResource("ComFre.html").toString());
+
         return (scene);
     }
     
@@ -164,14 +174,22 @@ public class ComFreContainer extends JFrame {
                 new Runnable() {
                     public void run() {
                      String out1 = str1;
+//                     System.out.print(out1);
                      out1 = out1.replaceAll("\'", "\\'");
-                     out1 = out1.replaceAll("\"", "\\");
+                     out1 = out1.replaceAll("\"", "");
                      out1 = out1.replaceAll("\n", "*SPACE*");
+                     out1 = out1.replaceAll("\r", "");
+                            
+                     //System.out.print(out1);
                      String out2 = str2;
                      out2 = out2.replaceAll("\'", "\\'");
-                     out2 = out2.replaceAll("\"", "\\");
+                     out2 = out2.replaceAll("\"", "");
                      out2 = out2.replaceAll("\n", "*SPACE*");
-                    engine.executeScript("loadFiles([\"" + out1 + "\"], [\"" + out2 + "\"]);");
+                     out2 = out2.replaceAll("\r", "");
+                
+                     //out1 = "tribe";
+//                    System.out.println("loadFiles([\""+out1+"\"],[2])");
+                    engine.executeScript("loadFiles([\""+out2+"\"],[\""+out2+"\"])");
                       
             }});
         }

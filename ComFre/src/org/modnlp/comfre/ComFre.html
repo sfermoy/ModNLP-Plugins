@@ -56,7 +56,7 @@
 	</div>
 	<br> -->
 	<div id="area1">
-            <div><h2>Please select two named sub-corpora from the dropdowns. Then click the "draw" button.<br> 
+            <div><h2>Please select two named sub-corpora from the dropdowns. These subcorpora must be from the currently active corpus. Then click the "draw" button.<br> 
                     You can create named sub-corpora using the sub-corpus tool available in the main concordance browser window. (ZOOM using + and -)</h2></div>
 		<input id="SearchBox" type="text" placeholder ="Search words seperated by commas" value="" />
 	</div>
@@ -169,9 +169,9 @@ function setup(){
     .range([0,height]);
 
  svgSlider = d3.select("#area1").append("svg").attr("width", 1050).attr("height", 60),
-        slider1 = new simpleSlider(0),
-        slider2 = new simpleSlider(1)
-        slider3 = new simpleSlider(2),
+        slider1 = new simpleSlider(0);
+        slider2 = new simpleSlider(1);
+        slider3 = new simpleSlider(2);
         slider4 = new simpleSlider(1);
 
 
@@ -473,9 +473,9 @@ d3.selection.prototype.moveToFront = function() {
     
     for (var i = 0; i < wordsList.length; i++) {
       if(i ===0 )
-        regx = regx + "(^|\W)"+wordsList[i] + "\\w*"
+        regx = regx + "(^|\W)"+wordsList[i] + "\\w*";
       else
-        regx = regx + "|" + "(^|\W)"+ wordsList[i] + "\\w*" 
+        regx = regx + "|" + "(^|\W)"+ wordsList[i] + "\\w*"; 
 
     }
     var patt = new RegExp(regx);
@@ -590,12 +590,13 @@ d3.selection.prototype.moveToFront = function() {
 
 
 function loadFiles(arr1, arr2){
-    var find = '*SPACE*';
+
+//    var find = '*SPACE*';
     var str1 = arr1[0].split("*SPACE*").join("\n");
     var str2 = arr2[0].split("*SPACE*").join("\n");
-//    vec.log(str1)
-//    vec.log(str2)
-    redrawVis(str1,str2)
+    //vec.log(arr1);
+    //vec.log(arr2);
+    redrawVis(str1,str2);
 
 }
 </script>
