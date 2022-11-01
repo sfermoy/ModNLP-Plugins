@@ -427,16 +427,18 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
                 var shouldRemove = false;
                 var yval = +d3.select(this).attr('y')
                 var shouldremove = false;
-                if (p[1] > dragstartPos[1])
-                    shouldremove = yval > dragstartPos[1] && yval < p[1];
-                if (p[1] < dragstartPos[1])
-                    shouldremove = yval < dragstartPos[1] && yval > p[1];
-                if(shouldremove ){
-                    var currentColor =  "red" ;                       
-                    var opacity =  0.3;
-                    d3.select(this).style("fill", currentColor);     
-                    d3.select(this).style("opacity", opacity);    
-            }
+                if (dragstartPos[0] < main_width + main_margin.left + main_margin.right){
+                    if (p[1] > dragstartPos[1])
+                        shouldremove = yval > dragstartPos[1] && yval < p[1];
+                    if (p[1] < dragstartPos[1])
+                        shouldremove = yval < dragstartPos[1] && yval > p[1];
+                    if(shouldremove ){
+                        var currentColor =  "red" ;                       
+                        var opacity =  0.3;
+                        d3.select(this).style("fill", currentColor);     
+                        d3.select(this).style("opacity", opacity);    
+                    }
+                }
       });
   }
           
@@ -446,16 +448,18 @@ var tooltip = d3.select("body").append("div").attr("class", "toolTip");
             .each(function(b) {
                 var yval = +d3.select(this).attr('y')
                 var shouldremove = false;
-                if (p[1] > dragstartPos[1])
-                    shouldremove = yval > dragstartPos[1] && yval < p[1];
-                if (p[1] < dragstartPos[1])
-                    shouldremove = yval < dragstartPos[1] && yval > p[1];
-                if(shouldremove ){
-                    var currentColor = "red" ;
-                    var opacity =  0.3 ;
-                    d3.select(this).style("fill", currentColor);     
-                    d3.select(this).style("opacity", opacity);
-                    remove(b.key);
+                if (dragstartPos[0] < main_width + main_margin.left + main_margin.right){
+                    if (p[1] > dragstartPos[1])
+                        shouldremove = yval > dragstartPos[1] && yval < p[1];
+                    if (p[1] < dragstartPos[1])
+                        shouldremove = yval < dragstartPos[1] && yval > p[1];
+                    if(shouldremove ){
+                        var currentColor = "red" ;
+                        var opacity =  0.3 ;
+                        d3.select(this).style("fill", currentColor);     
+                        d3.select(this).style("opacity", opacity);
+                        remove(b.key);
+                     }
                  }
                
       });
