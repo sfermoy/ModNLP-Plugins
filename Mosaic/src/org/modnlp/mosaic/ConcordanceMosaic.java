@@ -439,12 +439,29 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
           }
           Object[] tkns2;
           //left context
-          Object[] tkns1 = (ss.split(co.getLeftContext())).toArray();
+          String left_context = co.getLeftContext();
+          left_context = left_context.replaceAll("http.*?\\s", "");
+          left_context = left_context.replaceAll("https.*?\\s", "");
+          Object[] tkns1 = (ss.split(left_context)).toArray();
+          
           //right context
           //tkns2 = (ss.splitWordOnly(co.getKeywordAndRightContext())).toArray();
-          // @shane: not quite sure why you used splitWordOnly; reverting to split... 
-          tkns2 = (ss.split(co.getKeywordAndRightContext())).toArray();
+          // @shane: not quite sure why you used splitWordOnly; reverting to split..
+          
+          String right_context = co.getKeywordAndRightContext();
+          right_context = right_context.replaceAll("http.*?\\s", "");
+          right_context = right_context.replaceAll("https.*?\\s", "");
+          tkns2 = (ss.split(right_context)).toArray();
           Object[] tkns = new Object[9];
+          
+          //Check for URL at this point so that mosaic position counts are not affected
+//          Object[] tkns1copy = tkns1.clone();
+//            for (int i = 0; i < tkns1.length; i++) {
+//                String token = (String)tkns1[i];
+//                if token
+//                
+//            }
+          
           //account for concordances at begining or end of docs
           if (tkns1.length > 4) {
             System.arraycopy(tkns1, (tkns1.length - 4), tkns, 0, 4);
@@ -1081,6 +1098,7 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
     }
     return wc;
   }
+
   
 }
 
