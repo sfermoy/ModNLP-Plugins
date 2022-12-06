@@ -75,6 +75,12 @@ import java.net.URL;
 import java.text.NumberFormat;
 import javax.swing.JComboBox;
 import javax.swing.JToggleButton;
+import javax.swing.JSlider;
+import javax.swing.JLabel;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.BoxLayout;
+import java.awt.Font;
 
 /**
  *
@@ -91,6 +97,9 @@ public class ConcordanceMosaic extends JFrame
   public static final int MAXCOLS = 200;
   public static final int GROW = 1;
   public static final int PRUNE = 2;
+  private int min_count = 1;
+  private final JSlider min_count_slider =
+    new JSlider(JSlider.HORIZONTAL, 1,15,1);
   private boolean is_rel_freq = false;
   private boolean is_pos_freq = false;
   private Graph graph = null;
@@ -181,9 +190,24 @@ public class ConcordanceMosaic extends JFrame
     final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Global)");
     final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Local)");
     
+
     final JPanel pas = new JPanel();
     
-    pas.add(frequencyButton);
+
+    final JPanel psl = new JPanel();
+    JLabel sl = new JLabel("Min count", JLabel.CENTER);
+    sl.setFont( new Font("Serif", Font.PLAIN, 8));
+    psl.setLayout(new BoxLayout(psl, BoxLayout.PAGE_AXIS));
+    sl.setAlignmentX(Component.CENTER_ALIGNMENT);
+    min_count_slider.setFont( new Font("Serif", Font.PLAIN, 8));
+    min_count_slider.setMinorTickSpacing(1);  
+    min_count_slider.setMajorTickSpacing(7);  
+    min_count_slider.setPaintTicks(true);  
+    min_count_slider.setPaintLabels(true);  
+    psl.add(frequencyButton);
+    psl.add(sl);
+    psl.add(min_count_slider);
+    pas.add(psl);
     pas.add(stopwordFrequencyButton);
     pas.add(relFrequencyButton);
     pas.add(relFreqPosButton);
@@ -191,21 +215,28 @@ public class ConcordanceMosaic extends JFrame
     final JFrame window = this;
     
 
-   // metricList.setSelectedIndex(0);
+    // metricList.setSelectedIndex(0);
 
-this.getRootPane().addComponentListener(new ComponentAdapter() {
-            public void componentResized(ComponentEvent e) {
-                Component c =(Component)e.getSource();
-                totalWidth = (c.getWidth()-5)/9;
-                totalHeigth = c.getHeight()-40;
-//                if( window.getExtendedState() != JFrame.MAXIMIZED_BOTH){
-//                    MakeMosaic();
-//                }
-            }
-        });
-        
- 
-   metricList.addActionListener(new ActionListener() {
+    this.getRootPane().addComponentListener(new ComponentAdapter() {
+        public void componentResized(ComponentEvent e) {
+          Component c =(Component)e.getSource();
+          totalWidth = (c.getWidth()-5)/9;
+          totalHeigth = c.getHeight()-40;
+          //                if( window.getExtendedState() != JFrame.MAXIMIZED_BOTH){
+          //                    MakeMosaic();
+          //                }
+        }
+      });
+    
+    min_count_slider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (!min_count_slider.getValueIsAdjusting()) {
+            min_count = (int)min_count_slider.getValue();
+            MakeMosaic();
+          }
+        }});
+
+    metricList.addActionListener(new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
           MakeMosaic();
         }
@@ -693,6 +724,7 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
                   if(counter.get(column[x]) < 3 && nrows>400){
                     n.set("frequency", 0.0000000001);
                     n.set("tooltip", 0.0000000001);
+                    //n.set("makeInvis", true);
                   }
                   else{
                     stopword_column_length += val;
@@ -700,7 +732,7 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
                     n.set("tooltip", val);
                   }
                 }
-              } else {
+              } else { // if ! stopwords
                 n.set("frequency", val);
 //                 if (i == 4) {
 //                    n.set("frequency", 1/(double)column.length);
@@ -709,6 +741,12 @@ this.getRootPane().addComponentListener(new ComponentAdapter() {
                 n.set("tooltip", val);
                 n.set("tooltipLayoutSwitch", false);
                 n.set("tooltipFreq", val);
+                if(counter.get(column[x])<min_count){
+                    n.set("frequency", 0.0000000001);
+                    n.set("tooltip", 0.0000000001);
+                    //System.err.println("filtered "+column[x]+" nrows="+nrows+" max="+min_count);
+                    n.set("makeInvis", true);
+                  }
               }
             }
             n.set("column", i);
