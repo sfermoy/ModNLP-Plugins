@@ -119,7 +119,13 @@ public class MosaicLayout extends Layout {
                 items_in_coulmn = new ArrayList<VisualItem>();
             }
             
-            item.setVisible(true);
+            
+            if( (boolean) item.get("makeInvis") == true){
+                item.setVisible(false);
+            }
+            else{
+                item.setVisible(true);
+            }
             int xoffset = width*((Integer)item.get("column"));
             double x = bx + (double)xoffset;
            

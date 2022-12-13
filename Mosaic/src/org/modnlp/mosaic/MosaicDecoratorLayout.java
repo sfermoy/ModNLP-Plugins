@@ -42,6 +42,12 @@ public class MosaicDecoratorLayout extends Layout
             
             setX(decorator, null, x);
             setY(decorator, null, y);
+             if( (boolean) decoratedItem.get("makeInvis") == true){
+                decorator.setVisible(false);
+            }
+            else{
+                decorator.setVisible(true);
+            }
         }
     }
 }

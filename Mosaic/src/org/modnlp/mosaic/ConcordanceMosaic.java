@@ -81,6 +81,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.BoxLayout;
 import java.awt.Font;
+import java.io.Console;
 
 /**
  *
@@ -97,9 +98,12 @@ public class ConcordanceMosaic extends JFrame
   public static final int MAXCOLS = 200;
   public static final int GROW = 1;
   public static final int PRUNE = 2;
-  private int min_count = 1;
+  private int min_count = 0;
+  private int max_count = 100;
   private final JSlider min_count_slider =
-    new JSlider(JSlider.HORIZONTAL, 1,15,1);
+    new JSlider(JSlider.HORIZONTAL, 0,40,1);
+  private final JSlider max_count_slider =
+    new JSlider(JSlider.HORIZONTAL, 1,100,1);
   private boolean is_rel_freq = false;
   private boolean is_pos_freq = false;
   private Graph graph = null;
@@ -135,9 +139,14 @@ public class ConcordanceMosaic extends JFrame
   private String currentCorpusAddress = null;
   
   private int totalHeigth = 450;
-  private int totalWidth =98;
+  private int totalWidth = 98;
   private String[] metricStrings = { "Z-score", "Log-Log", "MI (EXP scale)", "MI3 (EXP scale)"};
   private JComboBox metricList = new JComboBox(metricStrings);
+  private JPanel psl = new JPanel();
+  
+  private boolean max_changed = false;
+  
+  private Display display;
   
   public ConcordanceMosaic() {
     thisFrame = this;
@@ -186,53 +195,114 @@ public class ConcordanceMosaic extends JFrame
     getContentPane().add(tpanel, BorderLayout.CENTER);
     
     final JToggleButton frequencyButton = new JToggleButton("Column Frequency");
-    final JToggleButton stopwordFrequencyButton = new JToggleButton("Column Frequency (No Stopwords)");
+    //final JToggleButton stopwordFrequencyButton = new JToggleButton("Column Frequency (No Stopwords)");
     final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Global)");
     final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Local)");
     
-
     final JPanel pas = new JPanel();
     
-
-    final JPanel psl = new JPanel();
-    JLabel sl = new JLabel("Min count", JLabel.CENTER);
-    sl.setFont( new Font("Serif", Font.PLAIN, 8));
     psl.setLayout(new BoxLayout(psl, BoxLayout.PAGE_AXIS));
+    
+    JLabel sl = new JLabel("Min Frequency", JLabel.LEFT);
+    sl.setFont( new Font("Serif", Font.PLAIN, 11));
     sl.setAlignmentX(Component.CENTER_ALIGNMENT);
+    
+    JLabel s2 = new JLabel("Max Frequency", JLabel.LEFT);
+    s2.setFont( new Font("Serif", Font.PLAIN, 11));
+    s2.setAlignmentX(Component.CENTER_ALIGNMENT);
+    
     min_count_slider.setFont( new Font("Serif", Font.PLAIN, 8));
-    min_count_slider.setMinorTickSpacing(1);  
-    min_count_slider.setMajorTickSpacing(7);  
+    min_count_slider.setValue(0);
+    min_count_slider.setMinorTickSpacing(5);  
+    min_count_slider.setMajorTickSpacing(10);  
     min_count_slider.setPaintTicks(true);  
     min_count_slider.setPaintLabels(true);  
-    psl.add(frequencyButton);
+    
+    max_count_slider.setFont( new Font("Serif", Font.PLAIN, 8));
+    max_count_slider.setValue(100);
+    max_count_slider.setMinorTickSpacing(5);  
+    max_count_slider.setMajorTickSpacing(10);  
+    max_count_slider.setPaintTicks(true);  
+    max_count_slider.setPaintLabels(true);  
+    
     psl.add(sl);
     psl.add(min_count_slider);
-    pas.add(psl);
-    pas.add(stopwordFrequencyButton);
+    psl.add(s2);
+    psl.add(max_count_slider);
+   
+    //pas.add(stopwordFrequencyButton);
+    pas.add(frequencyButton);
     pas.add(relFrequencyButton);
     pas.add(relFreqPosButton);
+    pas.add(psl);
     frequencyButton.setSelected(true);
     final JFrame window = this;
     
-
     // metricList.setSelectedIndex(0);
 
     this.getRootPane().addComponentListener(new ComponentAdapter() {
         public void componentResized(ComponentEvent e) {
           Component c =(Component)e.getSource();
           totalWidth = (c.getWidth()-5)/9;
-          totalHeigth = c.getHeight()-40;
+          if(frequencyButton.isSelected()){
+            totalHeigth = c.getHeight()-116;
+          }
+          else{
+          totalHeigth = c.getHeight()-36;
+          }
           //                if( window.getExtendedState() != JFrame.MAXIMIZED_BOTH){
           //                    MakeMosaic();
           //                }
         }
       });
     
+    
     min_count_slider.addChangeListener(new ChangeListener() {
         public void stateChanged(ChangeEvent e) {
           if (!min_count_slider.getValueIsAdjusting()) {
             min_count = (int)min_count_slider.getValue();
+            if(frequencyButton.isSelected() &&( min_count >0 || max_changed)){
+                is_rel_freq = false;
+                is_pos_freq = false;
+                filterStopwords = true;
+                pas.remove(metricList);
+                MakeMosaic();  
+            }
+            else{
+                is_rel_freq = false;
+                is_pos_freq = false;
+                filterStopwords = false;
+                pas.remove(metricList);
+                MakeMosaic();
+            }
+          }
+        }});
+    
+    max_count_slider.addChangeListener(new ChangeListener() {
+        public void stateChanged(ChangeEvent e) {
+          if (!max_count_slider.getValueIsAdjusting()) {
+            max_count = (int)max_count_slider.getValue();
+            is_rel_freq = false;
+            is_pos_freq = false;
+            filterStopwords = true;
+            pas.remove(metricList);
             MakeMosaic();
+            if(frequencyButton.isSelected() && (max_changed || min_count >0 )){
+                System.out.println("fffff");
+                is_rel_freq = false;
+                is_pos_freq = false;
+                filterStopwords = true;
+                pas.remove(metricList);
+                MakeMosaic();
+            }
+            else{
+                System.out.println("dasdsad");
+                is_rel_freq = false;
+                is_pos_freq = false;
+                filterStopwords = false;
+                pas.remove(metricList);
+                MakeMosaic();
+            }
           }
         }});
 
@@ -249,26 +319,31 @@ public class ConcordanceMosaic extends JFrame
           relFreqPosButton.setSelected(false);
           frequencyButton.setSelected(!is_rel_freq);
           relFrequencyButton.setSelected(is_rel_freq);
-          stopwordFrequencyButton.setSelected(false);
-          filterStopwords = false;
+          //stopwordFrequencyButton.setSelected(false);
+           if (min_count >0 ){
+            filterStopwords = true;
+           }else{
+               filterStopwords = false;
+           }
+          pas.add(psl);
           pas.remove(metricList);
           MakeMosaic();
         }
       });
     
-    stopwordFrequencyButton.addActionListener(new ActionListener() {
-        public void actionPerformed(java.awt.event.ActionEvent evt) {
-          is_rel_freq = false;
-          is_pos_freq = false;
-          relFreqPosButton.setSelected(false);
-          frequencyButton.setSelected(false);
-          relFrequencyButton.setSelected(false);
-          stopwordFrequencyButton.setSelected(true);
-          filterStopwords = true;
-          pas.remove(metricList);
-          MakeMosaic();
-        }
-      });
+//    stopwordFrequencyButton.addActionListener(new ActionListener() {
+//        public void actionPerformed(java.awt.event.ActionEvent evt) {
+//          is_rel_freq = false;
+//          is_pos_freq = false;
+//          relFreqPosButton.setSelected(false);
+//          frequencyButton.setSelected(false);
+//          relFrequencyButton.setSelected(false);
+//          stopwordFrequencyButton.setSelected(true);
+//          filterStopwords = true;
+//          pas.remove(metricList);
+//          MakeMosaic();
+//        }
+//      });
     
     relFrequencyButton.
       addActionListener(new ActionListener() {
@@ -279,8 +354,9 @@ public class ConcordanceMosaic extends JFrame
             relFreqPosButton.setSelected(false);
             frequencyButton.setSelected(!is_rel_freq);
             relFrequencyButton.setSelected(is_rel_freq);
-            stopwordFrequencyButton.setSelected(false);
+            //stopwordFrequencyButton.setSelected(false);
             filterStopwords = false;
+            pas.remove(psl);
             pas.add(metricList);
             MakeMosaic();
           }
@@ -295,8 +371,9 @@ public class ConcordanceMosaic extends JFrame
             relFreqPosButton.setSelected(true);
             frequencyButton.setSelected(false);
             relFrequencyButton.setSelected(false);
-            stopwordFrequencyButton.setSelected(false);
+            //stopwordFrequencyButton.setSelected(false);
             filterStopwords = false;
+            pas.remove(psl);
             pas.add(metricList);
             MakeMosaic();
           }
@@ -410,8 +487,7 @@ public class ConcordanceMosaic extends JFrame
   }
   
   public void MakeMosaic() {
-      // collocation strength cutoff
-      double cutoff = 700;
+    max_changed = false;  
     if (!parent.isStandAlone() &&
         ( wordCounts == null || !currentCorpusAddress.equals(getRemoteCorpusAddress())  ) )
       {
@@ -705,12 +781,44 @@ public class ConcordanceMosaic extends JFrame
             if (is_rel_freq) {
               if (is_pos_freq) {
                 double val = Rel_freq_counter.get(column[x]);
+                double freqie = (counter.get(column[x]) * 0.01) / nrows;
                 //System.out.println(column[x]+  "  "+val);
+               
+                n.set("rel_freq", false);
+                n.set("tooltipLayoutSwitch", true);
                 n.set("frequency", val / rel_column_length);
                 n.set("tooltip", val);
                 n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
-                n.set("rel_freq", false);
-                n.set("tooltipLayoutSwitch", true);
+                
+//                Double min_frequency = min_count*.01;
+//                Double max_frequency = max_count *.01; 
+//                if (min_frequency >= max_frequency){
+//                  n.set("frequency", 0.0000000001 / rel_column_length);
+//                  n.set("tooltip", 0.0000000001);
+//                  n.set("tooltipFreq", 0.0000000001);
+//                  n.set("makeInvis", true);
+//                }else{
+//                    if (freqie >=  max_frequency && i != 4) { //threshold
+//                      n.set("frequency", 0.0000000001 / rel_column_length);
+//                      n.set("tooltip", 0.0000000001);
+//                      n.set("tooltipFreq", 0.0000000001);
+//                      n.set("makeInvis", true);
+//                    } else {
+//                      if(freqie < min_frequency ){
+//                        n.set("frequency", 0.0000000001 / rel_column_length);
+//                        n.set("tooltip", 0.0000000001);
+//                        n.set("tooltipFreq", 0.0000000001);
+//                        n.set("makeInvis", true);
+//                      }
+//                      else{
+//                        n.set("frequency", val / rel_column_length);
+//                        n.set("tooltip", val);
+//                        n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
+//                      }
+//                    }
+//                }
+                
+                
               } else {
                 double val = Rel_freq_counter.get(column[x]);
                 n.set("frequency", val);
@@ -727,27 +835,37 @@ public class ConcordanceMosaic extends JFrame
                 n.set("tooltipLayoutSwitch", false);
                 n.set("tooltipFreq", 10.0);//(Double) (counter.get(column[x]) * 1.0) / nrows);
                 Double thresh;
-                if (parent.isStandAlone()) {
-                  thresh = (getNoOfTokens(column[x]) * 1.0) / total_no_tokens;
-                } else {
-                  thresh = (hm.get(column[x]) * 1.0) / total_no_tokens;
-                }
+//                if (parent.isStandAlone()) {
+//                  thresh = (getNoOfTokens(column[x]) * 1.0) / total_no_tokens;
+//                } else {
+//                  thresh = (hm.get(column[x]) * 1.0) / total_no_tokens;
+//                }
                 
-                if (thresh >= 0.0015 && i != 4) {
+                Double min_frequency = min_count*.01;
+                Double max_frequency = max_count *.01; 
+                if (min_frequency >= max_frequency){
                   n.set("frequency", 0.0000000001);
                   n.set("tooltip", 0.0000000001);
                   n.set("makeInvis", true);
-                } else {
-                  if(counter.get(column[x]) < 3 && nrows>400){
-                    n.set("frequency", 0.0000000001);
-                    n.set("tooltip", 0.0000000001);
-                    //n.set("makeInvis", true);
-                  }
-                  else{
-                    stopword_column_length += val;
-                    n.set("frequency", val);
-                    n.set("tooltip", val);
-                  }
+                }else{
+                    if (val >=  max_frequency && i != 4) { //threshold
+                      n.set("frequency", 0.0000000001);
+                      n.set("tooltip", 0.0000000001);
+                      n.set("makeInvis", true);
+                      max_changed = true;
+                      //System.out.println("max_changed");
+                    } else {
+                      if(val < min_frequency ){
+                        n.set("frequency", 0.0000000001);
+                        n.set("tooltip", 0.0000000001);
+                        n.set("makeInvis", true);
+                      }
+                      else{
+                        stopword_column_length += val;
+                        n.set("frequency", val);
+                        n.set("tooltip", val);
+                      }
+                    }
                 }
               } else { // if ! stopwords
                 n.set("frequency", val);
@@ -758,12 +876,7 @@ public class ConcordanceMosaic extends JFrame
                 n.set("tooltip", val);
                 n.set("tooltipLayoutSwitch", false);
                 n.set("tooltipFreq", val);
-                if(counter.get(column[x])<min_count){
-                    n.set("frequency", 0.0000000001);
-                    n.set("tooltip", 0.0000000001);
-                    //System.err.println("filtered "+column[x]+" nrows="+nrows+" max="+min_count);
-                    n.set("makeInvis", true);
-                  }
+                
               }
             }
             n.set("column", i);
@@ -873,7 +986,7 @@ public class ConcordanceMosaic extends JFrame
   }
   
   private void calculateStopwordFreqHeigths() {
-    columnHeigths.set(4, 0.0);
+    //columnHeigths.set(4, 0.0);
     //use this for absolute frequency unstreched
     double maxH = Collections.max(columnHeigths);
     for (Iterator iter = graph.nodes(); iter.hasNext();) {
@@ -883,7 +996,7 @@ public class ConcordanceMosaic extends JFrame
       double current = columnHeigths.get(col);
       double value = ((Double) item.get("tooltip"));
       
-      value = (value *(1/maxH));
+      value = (value *((maxH*1.0)/current));// 1/maxH to do positional encoding
       if (col != 4) {
         item.set("frequency", value);
       }
@@ -896,20 +1009,20 @@ public class ConcordanceMosaic extends JFrame
     vis.add("graph", graph);
     setUpActions();
     setUpRenderers();
-    Display d = new Display(vis);
-    d.setSize((totalWidth*9)+5, totalHeigth+5); //885,450 use 500 to see extra
+    display = new Display(vis);
+    display.setSize((totalWidth*9)+5, totalHeigth); //885,450 use 500 to see extra
     
     //d.addControlListener(new DragControl());
-    d.addControlListener(new PanControl(true));
-    d.addControlListener(new ZoomControl());
-    d.addControlListener(new WheelZoomControl());
-    d.addControlListener(new MosaicTooltip(parent));
+    display.addControlListener(new PanControl(true));
+    display.addControlListener(new ZoomControl());
+    display.addControlListener(new WheelZoomControl());
+    display.addControlListener(new MosaicTooltip(parent));
     ToolTipManager.sharedInstance().setInitialDelay(650);
     ToolTipManager.sharedInstance().setReshowDelay(650);
     ToolTipManager.sharedInstance().setDismissDelay(1700);
-    d.addControlListener(new HoverTooltip(parent, vis, this));
-    d.addControlListener(new AnchorUpdateControl(dist, "distort"));
-    tpanel.add(d, BorderLayout.CENTER);
+    display.addControlListener(new HoverTooltip(parent, vis, this));
+    display.addControlListener(new AnchorUpdateControl(dist, "distort"));
+    tpanel.add(display, BorderLayout.CENTER);
     pack();
     setVisible(true);
     vis.run("color");
