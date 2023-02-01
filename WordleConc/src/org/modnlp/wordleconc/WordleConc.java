@@ -213,7 +213,7 @@ Plugin
     int y = wapplet.getSize().height/2;
     kw.setPlace(x,y);
 
-    System.out.println("\n--"+kw);    
+    //System.out.println("\n--"+kw);    
     words[tlength-1] =  kw;
 
     return words;

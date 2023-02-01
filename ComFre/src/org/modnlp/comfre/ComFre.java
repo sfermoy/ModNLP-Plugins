@@ -275,7 +275,7 @@ public class ComFre implements Plugin, Runnable, FqThreadCompleteListener{
             }
             else{
                 TecClientRequest clRequest = new TecClientRequest();
-                clRequest.setServerURL("http://" + parent.getRemoteServer());
+                clRequest.setServerURL(parent.getRemoteWebcli());
                 clRequest.setServerPORT(parent.getRemotePort());
                 clRequest.put("request", "serverDate");
                 if (parent.isSubCorpusSelectionON()) {

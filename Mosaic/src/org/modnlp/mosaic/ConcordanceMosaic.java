@@ -388,8 +388,8 @@ public class ConcordanceMosaic extends JFrame
         d = parent.getDictionary();
         total_no_tokens = d.getTotalNoOfTokens();
       } else {
-        clRequest.setServerURL("http://" + parent.getRemoteServer());
-        clRequest.setServerPORT(parent.getRemotePort());
+        clRequest.setServerURL(parent.getRemoteWebcli());
+        //clRequest.setServerPORT(parent.getRemotePort());
         clRequest.put("request", "freqword");
         if (parent.isSubCorpusSelectionON()) {
           clRequest.put("xquerywhere", parent.getXQueryWhere());
@@ -420,7 +420,7 @@ public class ConcordanceMosaic extends JFrame
         d = parent.getDictionary();
         result = d.getTotalNoOfTokens();
       } else {
-        totRequest.setServerURL("http://" + parent.getRemoteServer());
+        totRequest.setServerURL(parent.getRemoteWebcli());
         totRequest.setServerPORT(parent.getRemotePort());
         totRequest.put("request", "nooftokens");
         if (parent.isSubCorpusSelectionON()) {
@@ -452,7 +452,7 @@ public class ConcordanceMosaic extends JFrame
         result = d.getFrequency(d.getCaseTable().getAllCases(word));
       } else {
         
-        clRequest.setServerURL("http://" + parent.getRemoteServer());
+        clRequest.setServerURL(parent.getRemoteWebcli());
         clRequest.setServerPORT(parent.getRemotePort());
         clRequest.put("request", "freqword");
         clRequest.put("keyword", word);
@@ -1152,7 +1152,7 @@ public class ConcordanceMosaic extends JFrame
 
       } else {
         TecClientRequest rq = new TecClientRequest();
-        rq.setServerURL("http://" + parent.getRemoteServer());
+        rq.setServerURL(parent.getRemoteWebcli());
         rq.setServerPORT(parent.getRemotePort());
         rq.put("request", "freqlist");
         rq.put("skipfirst", "" + 0);

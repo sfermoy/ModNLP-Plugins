@@ -93,9 +93,9 @@ public class WordleConcPApplet extends PApplet implements ActionListener{
       println("WordleConcPApplet: =====done=====");
       noLoop();
       // dump word list (for debugging)
-      Word[] w = wc.getWords();
-      for (int i =0; i < w.length; i++)
-        System.out.print(w[i].getProperty("count")+",");
+      //Word[] w = wc.getWords();
+      //for (int i =0; i < w.length; i++)
+      //  System.out.print(w[i].getProperty("count")+",");
     }
   }
 
