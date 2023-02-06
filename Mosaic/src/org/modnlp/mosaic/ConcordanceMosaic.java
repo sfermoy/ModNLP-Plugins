@@ -103,7 +103,7 @@ public class ConcordanceMosaic extends JFrame
   private final JSlider min_count_slider =
     new JSlider(JSlider.HORIZONTAL, 0,40,1);
   private final JSlider max_count_slider =
-    new JSlider(JSlider.HORIZONTAL, 1,100,1);
+    new JSlider(JSlider.HORIZONTAL, 0,100,1);
   private boolean is_rel_freq = false;
   private boolean is_pos_freq = false;
   private Graph graph = null;
