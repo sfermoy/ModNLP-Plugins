@@ -76,14 +76,19 @@ public class MosaicLayout extends Layout {
         int m = rows, n = cols;
         List<VisualItem> items_in_coulmn = new ArrayList<VisualItem>();
         boolean isRelFreq =false;
+         boolean isSlider =false;
        
         Iterator iter = ts.tuples();
         // layout grid contents
        
         for ( int i=0; iter.hasNext() && i < m*n; ++i ) {
             VisualItem item = (VisualItem)iter.next();
-            if(i==0)
-                isRelFreq= (Boolean)item.get("rel_freq");        
+            if(i==0){
+                isRelFreq= (Boolean)item.get("rel_freq");
+                isSlider = (Boolean)item.get("isStopwordView");
+                
+            }
+            
             if((Integer)item.get("column") == 4){
                 //item.setFillColor(ColorLib.color(java.awt.Color.BLUE));
                 item.setEndFillColor(item.getFillColor());
@@ -93,27 +98,58 @@ public class MosaicLayout extends Layout {
             
             if(previous_column<(Integer)item.get("column")){
                 if(!isRelFreq){
-                if(height_used < heigth){
-                    int totalToAdd = 0;
-                    int itemNumber = 0;
-                    int amountToAdd = 1;
-                    while(height_used < heigth){
-                        VisualItem modify = items_in_coulmn.get(itemNumber);
-                        setY(modify, null, modify.getY() + (amountToAdd*itemNumber));
-                        modify.set("add1", amountToAdd);
-                        totalToAdd += amountToAdd;
-                        itemNumber++;
-                        if(itemNumber > m){
-                            itemNumber = 0;
-                            amountToAdd += 1;
+                    if(height_used < heigth){
+                        int totalToAdd = 0;
+                        int itemNumber = 0;
+                        int amountToAdd = 1;
+                        int num_items = m;
+                        while(height_used < heigth){
+                            VisualItem modify = items_in_coulmn.get(itemNumber);
+                            setY(modify, null, modify.getY() + (amountToAdd*itemNumber));
+                            modify.set("add1", amountToAdd);
+                            totalToAdd += amountToAdd;
+                            itemNumber++;
+
+                            if(itemNumber > num_items){
+                                itemNumber = 0;
+                                amountToAdd += 1;
+                            }
+                            height_used++;
                         }
-                        height_used++;
-                    }
-                    for(int x = itemNumber; x < items_in_coulmn.size(); x++){
-                        VisualItem modify = items_in_coulmn.get(x);
-                        setY(modify, null, modify.getY() + (totalToAdd));
+                        int colLength = items_in_coulmn.size();
+                        for(int x = itemNumber; x < colLength; x++){
+                            VisualItem modify = items_in_coulmn.get(x);
+                            setY(modify, null, modify.getY() + (totalToAdd));
+                        }
                     }
                 }
+                 if(isSlider ){
+                    if(height_used < heigth){
+                        int totalToAdd = 0;
+                        int itemNumber = 0;
+                        int amountToAdd = 1;
+                        int num_items = m;
+                        while(height_used < heigth){
+                            VisualItem modify = items_in_coulmn.get(itemNumber);
+                            //setY(modify, null, modify.getY() + (amountToAdd*itemNumber));
+                            modify.set("add1", amountToAdd);
+                            totalToAdd += amountToAdd;
+                            itemNumber++;
+                            if(isSlider)
+                                num_items = (int) modify.get("height") -1;
+                            if(itemNumber > num_items){
+                                itemNumber = 0;
+                                amountToAdd += 1;
+                            }
+                            height_used++;
+                        }
+                        int totalPix = 0;
+                        for(int x = 0; x <= num_items; x++){
+                            VisualItem modify = items_in_coulmn.get(x);
+                            setY(modify, null, modify.getY() + totalPix);
+                            totalPix += (int) modify.get("add1");
+                        }
+                    }
                 }
                 height_used = 0;
                 items_in_coulmn = new ArrayList<VisualItem>();
@@ -125,18 +161,18 @@ public class MosaicLayout extends Layout {
             }
             else{
                 item.setVisible(true);
+                int xoffset = width*((Integer)item.get("column"));
+                double x = bx + (double)xoffset;
+
+
+                double y = by + height_used;
+
+                setX(item,null,x);
+                setY(item,null,y);
+                height_used +=  Math.floor((heigth )* ((Double) item.get("frequency")));
+                previous_column=(Integer)item.get("column");
+                items_in_coulmn.add(item); 
             }
-            int xoffset = width*((Integer)item.get("column"));
-            double x = bx + (double)xoffset;
-           
-            
-            double y = by + height_used;
-           
-            setX(item,null,x);
-            setY(item,null,y);
-            height_used +=  Math.floor((heigth )* ((Double) item.get("frequency")));
-            previous_column=(Integer)item.get("column");
-            items_in_coulmn.add(item);
             
         }
         // for final column should change as we are repeating code
@@ -160,6 +196,34 @@ public class MosaicLayout extends Layout {
                     for(int x=itemNumber;x<items_in_coulmn.size();x++){
                         VisualItem modify = items_in_coulmn.get(x);
                         setY(modify,null,modify.getY()+(totalToAdd));
+                    }
+                }
+                             if(isSlider ){
+                    if(height_used < heigth){
+                        int totalToAdd = 0;
+                        int itemNumber = 0;
+                        int amountToAdd = 1;
+                        int num_items = m;
+                        while(height_used < heigth){
+                            VisualItem modify = items_in_coulmn.get(itemNumber);
+                            //setY(modify, null, modify.getY() + (amountToAdd*itemNumber));
+                            modify.set("add1", amountToAdd);
+                            totalToAdd += amountToAdd;
+                            itemNumber++;
+                            if(isSlider)
+                                num_items = (int) modify.get("height") -1;
+                            if(itemNumber > num_items){
+                                itemNumber = 0;
+                                amountToAdd += 1;
+                            }
+                            height_used++;
+                        }
+                        int totalPix = 0;
+                        for(int x = 0; x <= num_items; x++){
+                            VisualItem modify = items_in_coulmn.get(x);
+                            setY(modify, null, modify.getY() + totalPix);
+                            totalPix += (int) modify.get("add1");
+                        }
                     }
                 }
         }

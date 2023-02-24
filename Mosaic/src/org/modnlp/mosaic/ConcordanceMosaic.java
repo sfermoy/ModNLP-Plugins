@@ -60,7 +60,6 @@ import prefuse.visual.VisualItem;
 import prefuse.visual.expression.InGroupPredicate;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.io.BufferedReader;
@@ -81,7 +80,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.BoxLayout;
 import java.awt.Font;
-import java.io.Console;
+import java.util.Arrays;
 
 /**
  *
@@ -133,7 +132,10 @@ public class ConcordanceMosaic extends JFrame
   private BufferedReader input2;
   private int total_no_tokens;
   public List<Double> columnHeigths = new ArrayList<Double>();
-  private boolean filterStopwords = false;
+   public List<Integer> columnNumItems = new ArrayList<Integer>();
+   public List<Integer> numStopwordsRemoved = new ArrayList<Integer>();
+  private boolean SliderFilter = false;
+   private boolean filterStopwords = false;
   private BufferedReader input;
   private Map<String, Integer> wordCounts = null;
   private String currentCorpusAddress = null;
@@ -230,8 +232,9 @@ public class ConcordanceMosaic extends JFrame
     psl.add(s2);
     psl.add(max_count_slider);
    
-    //pas.add(stopwordFrequencyButton);
+    
     pas.add(frequencyButton);
+    //pas.add(stopwordFrequencyButton);
     pas.add(relFrequencyButton);
     pas.add(relFreqPosButton);
     pas.add(psl);
@@ -264,14 +267,14 @@ public class ConcordanceMosaic extends JFrame
             if(frequencyButton.isSelected() &&( min_count >0 || max_changed)){
                 is_rel_freq = false;
                 is_pos_freq = false;
-                filterStopwords = true;
+                SliderFilter = true;
                 pas.remove(metricList);
                 MakeMosaic();  
             }
             else{
                 is_rel_freq = false;
                 is_pos_freq = false;
-                filterStopwords = false;
+                SliderFilter = false;
                 pas.remove(metricList);
                 MakeMosaic();
             }
@@ -284,22 +287,20 @@ public class ConcordanceMosaic extends JFrame
             max_count = (int)max_count_slider.getValue();
             is_rel_freq = false;
             is_pos_freq = false;
-            filterStopwords = true;
+            SliderFilter = true;
             pas.remove(metricList);
             MakeMosaic();
             if(frequencyButton.isSelected() && (max_changed || min_count >0 )){
-                System.out.println("fffff");
                 is_rel_freq = false;
                 is_pos_freq = false;
-                filterStopwords = true;
+                SliderFilter = true;
                 pas.remove(metricList);
                 MakeMosaic();
             }
             else{
-                System.out.println("dasdsad");
                 is_rel_freq = false;
                 is_pos_freq = false;
-                filterStopwords = false;
+                SliderFilter = false;
                 pas.remove(metricList);
                 MakeMosaic();
             }
@@ -316,14 +317,15 @@ public class ConcordanceMosaic extends JFrame
         public void actionPerformed(java.awt.event.ActionEvent evt) {
           is_rel_freq = false;
           is_pos_freq = false;
+          filterStopwords = false;
           relFreqPosButton.setSelected(false);
           frequencyButton.setSelected(!is_rel_freq);
           relFrequencyButton.setSelected(is_rel_freq);
-          //stopwordFrequencyButton.setSelected(false);
+//          stopwordFrequencyButton.setSelected(false);
            if (min_count >0 ){
-            filterStopwords = true;
+            SliderFilter = true;
            }else{
-               filterStopwords = false;
+               SliderFilter = false;
            }
           pas.add(psl);
           pas.remove(metricList);
@@ -335,11 +337,13 @@ public class ConcordanceMosaic extends JFrame
 //        public void actionPerformed(java.awt.event.ActionEvent evt) {
 //          is_rel_freq = false;
 //          is_pos_freq = false;
+//          filterStopwords = true;
 //          relFreqPosButton.setSelected(false);
 //          frequencyButton.setSelected(false);
 //          relFrequencyButton.setSelected(false);
 //          stopwordFrequencyButton.setSelected(true);
-//          filterStopwords = true;
+//          SliderFilter = true;
+//          pas.add(psl);
 //          pas.remove(metricList);
 //          MakeMosaic();
 //        }
@@ -351,11 +355,12 @@ public class ConcordanceMosaic extends JFrame
             //stop();
             is_rel_freq = true;
             is_pos_freq = false;
+            filterStopwords = false;
             relFreqPosButton.setSelected(false);
             frequencyButton.setSelected(!is_rel_freq);
             relFrequencyButton.setSelected(is_rel_freq);
-            //stopwordFrequencyButton.setSelected(false);
-            filterStopwords = false;
+//            stopwordFrequencyButton.setSelected(false);
+            SliderFilter = false;
             pas.remove(psl);
             pas.add(metricList);
             MakeMosaic();
@@ -368,11 +373,12 @@ public class ConcordanceMosaic extends JFrame
             //stop();
             is_rel_freq = true;
             is_pos_freq = true;
+            filterStopwords = false;
             relFreqPosButton.setSelected(true);
             frequencyButton.setSelected(false);
             relFrequencyButton.setSelected(false);
-            //stopwordFrequencyButton.setSelected(false);
-            filterStopwords = false;
+//            stopwordFrequencyButton.setSelected(false);
+            SliderFilter = false;
             pas.remove(psl);
             pas.add(metricList);
             MakeMosaic();
@@ -452,7 +458,7 @@ public class ConcordanceMosaic extends JFrame
         result = d.getFrequency(d.getCaseTable().getAllCases(word));
       } else {
         
-        clRequest.setServerURL(parent.getRemoteWebcli());
+        clRequest.setServerURL("http://" + parent.getRemoteServer());
         clRequest.setServerPORT(parent.getRemotePort());
         clRequest.put("request", "freqword");
         clRequest.put("keyword", word);
@@ -520,6 +526,61 @@ public class ConcordanceMosaic extends JFrame
         
         sentenceIndexToVisualitems = new HashMap<Integer, ArrayList<VisualItem>>();
         wordToVisualitems = new HashMap<String, ArrayList<VisualItem>>();
+         ArrayList<String> stopwords = new ArrayList<>(Arrays.asList("i","me","my","myself","we","our","ours","ourselves","you","your","yours","yourself","yourselves","he","him","his","himself","she","her","hers","herself","it","its","itself","they","them","their","theirs","themselves","what","which","who","whom","this","that","these","those","am","is","are","was","were","be","been","being","have","has","had","having","do","does","did","doing","a","an","the","and","but","if","or","because","as","until","while","of","at","by","for","with","about","against","between","into","through","during","before","after","above","below","to","from","up","down","in","out","on","off","over","under","again","further","then","once","here","there","when","where","why","how","all","any","both","each","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","s","t","can","will","just","don","should","now"));
+        ArrayList<String> omcstopwords = new ArrayList<>(Arrays.asList("the",
+            "and",
+            "of",
+            "to",
+            "in",
+            "a",
+            "for",
+            "with",
+            "that ",
+            "is",
+            "on",
+            "are",
+            "as",
+            "be",
+            "by",
+            "from",
+            "have",
+            "or",
+            "this",
+            "at",
+            "s",
+            "an",
+            "their",
+            "it",
+            "was",
+            "has",
+            "more",
+            "were",
+            "all",
+            "they",
+            "which",
+            "other",
+            "these",
+            "been",
+            "can",
+            "also",
+            "among",
+            "should",
+            "such",
+            "will",
+            "than",
+            "there",
+            "but",
+            "one",
+            "including",
+            "may",
+            "had",
+            "between",
+            "about",
+            "et",
+            "al",
+            "through",
+            "its"));
+        
         Tokeniser ss;
         int la = parent.getLanguage();
         
@@ -599,6 +660,8 @@ public class ConcordanceMosaic extends JFrame
         }
         
         columnHeigths = new ArrayList<Double>();
+        columnNumItems = new ArrayList<Integer>();
+        numStopwordsRemoved = new ArrayList<Integer>();
         //for each column
         for (int i = 0; i < 9; i++) {
           rel_column_length = 0;
@@ -647,7 +710,7 @@ public class ConcordanceMosaic extends JFrame
             //if (  column[x].equalsIgnoreCase("*null*")) {
               Rel_freq_counter.put(column[x], 0.0000000001);
             } else {
-              if( filterStopwords ){
+              if( SliderFilter ){
                   Rel_freq_counter.put(column[x], (double) counter.get(column[x]));
               }
               else{
@@ -767,6 +830,8 @@ public class ConcordanceMosaic extends JFrame
           }
           column = list1.toArray(new String[list1.size()]);
           stopword_column_length = 0;
+          int num_items =0;
+          int stopwordsRemoved =0;
           for (int x = 0; x < column.length; x++) {
             Node n = graph.addNode();
             n.set("word", column[x].replace("-", "-\n"));
@@ -789,36 +854,7 @@ public class ConcordanceMosaic extends JFrame
                 n.set("frequency", val / rel_column_length);
                 n.set("tooltip", val);
                 n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
-                
-//                Double min_frequency = min_count*.01;
-//                Double max_frequency = max_count *.01; 
-//                if (min_frequency >= max_frequency){
-//                  n.set("frequency", 0.0000000001 / rel_column_length);
-//                  n.set("tooltip", 0.0000000001);
-//                  n.set("tooltipFreq", 0.0000000001);
-//                  n.set("makeInvis", true);
-//                }else{
-//                    if (freqie >=  max_frequency && i != 4) { //threshold
-//                      n.set("frequency", 0.0000000001 / rel_column_length);
-//                      n.set("tooltip", 0.0000000001);
-//                      n.set("tooltipFreq", 0.0000000001);
-//                      n.set("makeInvis", true);
-//                    } else {
-//                      if(freqie < min_frequency ){
-//                        n.set("frequency", 0.0000000001 / rel_column_length);
-//                        n.set("tooltip", 0.0000000001);
-//                        n.set("tooltipFreq", 0.0000000001);
-//                        n.set("makeInvis", true);
-//                      }
-//                      else{
-//                        n.set("frequency", val / rel_column_length);
-//                        n.set("tooltip", val);
-//                        n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
-//                      }
-//                    }
-//                }
-                
-                
+                           
               } else {
                 double val = Rel_freq_counter.get(column[x]);
                 n.set("frequency", val);
@@ -830,17 +866,11 @@ public class ConcordanceMosaic extends JFrame
               
             } else {
               double val = (Double) (counter.get(column[x]) * 1.0) / nrows;
-              if (filterStopwords) {
+              if (SliderFilter) {
                 n.set("rel_freq", true);
                 n.set("tooltipLayoutSwitch", false);
                 n.set("tooltipFreq", 10.0);//(Double) (counter.get(column[x]) * 1.0) / nrows);
-                Double thresh;
-//                if (parent.isStandAlone()) {
-//                  thresh = (getNoOfTokens(column[x]) * 1.0) / total_no_tokens;
-//                } else {
-//                  thresh = (hm.get(column[x]) * 1.0) / total_no_tokens;
-//                }
-                
+
                 Double min_frequency = min_count*.01;
                 Double max_frequency = max_count *.01; 
                 if (min_frequency >= max_frequency){
@@ -861,9 +891,26 @@ public class ConcordanceMosaic extends JFrame
                         n.set("makeInvis", true);
                       }
                       else{
-                        stopword_column_length += val;
-                        n.set("frequency", val);
-                        n.set("tooltip", val);
+                          if(filterStopwords){
+                              if(stopwords.contains(column[x])){
+                                  n.set("frequency", 0.0000000001);
+                                  n.set("tooltip", 0.0000000001);
+                                  n.set("makeInvis", true);
+                                  stopwordsRemoved+=1;
+                              }else{
+                                stopword_column_length += val;
+                                n.set("frequency", val);
+                                n.set("tooltip", val);
+                                num_items+=1;
+                              }
+                          }else{
+                            stopword_column_length += val;
+                            n.set("frequency", val);
+                            n.set("tooltip", val);
+                            num_items+=1;
+                          }
+                          
+                       
                       }
                     }
                 }
@@ -901,6 +948,8 @@ public class ConcordanceMosaic extends JFrame
             columnHeigths.add(rel_column_length);
           } else {
             columnHeigths.add(stopword_column_length);
+            columnNumItems.add(num_items);
+            numStopwordsRemoved.add(stopwordsRemoved);
           }
         }
         if (is_rel_freq) {
@@ -908,7 +957,7 @@ public class ConcordanceMosaic extends JFrame
           // and or calculate value for tooltip
           calculateRelFreqHeigths();
         }
-        if (!is_rel_freq && filterStopwords) {
+        if (!is_rel_freq && SliderFilter) {
           calculateStopwordFreqHeigths();
         }
         setDisplay();
@@ -989,16 +1038,26 @@ public class ConcordanceMosaic extends JFrame
     //columnHeigths.set(4, 0.0);
     //use this for absolute frequency unstreched
     double maxH = Collections.max(columnHeigths);
+    int curcol = -1;
+    double totaL =0.0;
     for (Iterator iter = graph.nodes(); iter.hasNext();) {
       Node item = (Node) iter.next();
       int col = (Integer) item.get("column");
+      if(col>curcol){
+          curcol = col;
+      }
+          
       //total heigth of column comment out and add line aboue for abs freq
       double current = columnHeigths.get(col);
       double value = ((Double) item.get("tooltip"));
       
       value = (value *((maxH*1.0)/current));// 1/maxH to do positional encoding
+      totaL +=value;
       if (col != 4) {
         item.set("frequency", value);
+        item.set("isStopwordView", true);
+        item.set("height", columnNumItems.get(curcol)- numStopwordsRemoved.get(curcol));
+//        item.set("rel_freq", false);
       }
     }
   }
@@ -1220,6 +1279,10 @@ public class ConcordanceMosaic extends JFrame
         }
           
         row = textLine.split(modnlp.Constants.LINE_ITEM_SEP);
+        if(row.length == 1)
+            continue;
+        if("|null|".equals(textLine))
+            continue;
         if (row[0].equals("0")) {
           if (row[1].equals(modnlp.idx.database.Dictionary.TTOKENS_LABEL)) {
             notokens = (new Integer(row[2])).intValue();
@@ -1230,7 +1293,7 @@ public class ConcordanceMosaic extends JFrame
           wordCounts.put(row[1].toString(), (new Integer(row[2])).intValue());
         }
       }
-      System.err.println("stopped at "+row[1].toString()+"=="+(new Integer(row[2])).intValue() + " ttratio ");
+      //System.err.println("stopped at "+row[1].toString()+"=="+(new Integer(row[2])).intValue() + " ttratio ");
       //System.err.println("read thread finished");
     } catch (Exception e) {
       System.err.println(cstats.toString());
