@@ -18,7 +18,11 @@
 package org.modnlp.mosaic;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
 import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,6 +30,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -40,6 +45,7 @@ import modnlp.tec.client.ConcordanceObject;
 import modnlp.tec.client.Plugin;
 import modnlp.tec.client.StateChanged;
 import modnlp.util.Tokeniser;
+import modnlp.gui.*;
 import prefuse.Constants;
 import prefuse.Display;
 import prefuse.Visualization;
@@ -79,6 +85,7 @@ import javax.swing.JLabel;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.BoxLayout;
+import java.awt.GridBagLayout;
 import java.awt.Font;
 import java.util.Arrays;
 
@@ -97,12 +104,83 @@ public class ConcordanceMosaic extends JFrame
   public static final int MAXCOLS = 200;
   public static final int GROW = 1;
   public static final int PRUNE = 2;
-  private int min_count = 0;
-  private int max_count = 100;
-  private final JSlider min_count_slider =
-    new JSlider(JSlider.HORIZONTAL, 0,40,1);
-  private final JSlider max_count_slider =
-    new JSlider(JSlider.HORIZONTAL, 0,100,1);
+
+  public static final ArrayList<String> stopwords = new ArrayList<>(Arrays.asList("i","me","my","myself","we","our","ours","ourselves","you","your","yours","yourself","yourselves","he","him","his","himself","she","her","hers","herself","it","its","itself","they","them","their","theirs","themselves","what","which","who","whom","this","that","these","those","am","is","are","was","were","be","been","being","have","has","had","having","do","does","did","doing","a","an","the","and","but","if","or","because","as","until","while","of","at","by","for","with","about","against","between","into","through","during","before","after","above","below","to","from","up","down","in","out","on","off","over","under","again","further","then","once","here","there","when","where","why","how","all","any","both","each","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","s","t","can","will","just","don","should","now"));
+  public static final ArrayList<String> omcstopwords =
+    new ArrayList<>(Arrays.asList("the",
+                                  "and",
+                                  "of",
+                                  "to",
+                                  "in",
+                                  "a",
+                                  "for",
+                                  "with",
+                                  "that ",
+                                  "is",
+                                  "on",
+                                  "are",
+                                  "as",
+                                  "be",
+                                  "by",
+                                  "from",
+                                  "have",
+                                  "or",
+                                  "this",
+                                  "at",
+                                  "s",
+                                  "an",
+                                  "their",
+                                  "it",
+                                  "was",
+                                  "has",
+                                  "more",
+                                  "were",
+                                  "all",
+                                  "they",
+                                  "which",
+                                  "other",
+                                  "these",
+                                  "been",
+                                  "can",
+                                  "also",
+                                  "among",
+                                  "should",
+                                  "such",
+                                  "will",
+                                  "than",
+                                  "there",
+                                  "but",
+                                  "one",
+                                  "including",
+                                  "may",
+                                  "had",
+                                  "between",
+                                  "about",
+                                  "et",
+                                  "al",
+                                  "through",
+                                  "its"));
+
+  private JCheckBox stopWordsCheck = new JCheckBox("Stopwords");
+  
+  // NO LONGER USED
+  //private int min_count = 0;
+  //private int max_count = 100;
+  // 
+  private double minFreq = 0;
+  private double maxFreq = 100;
+  // range slider
+  
+  private JPanel rangeSliderPanel = new JPanel(new GridBagLayout());
+  //rangeSliderPanel.setLayout(new GridBagLayout());
+  private JLabel rangeSliderValue1 = new JLabel();
+  private JLabel rangeSliderValue2 = new JLabel();
+  private final ExpRangeSlider rangeSlider = new ExpRangeSlider();
+  
+  //private final JSlider min_count_slider =
+  //  new JSlider(JSlider.HORIZONTAL, 0,40,1);
+  //private final JSlider max_count_slider =
+  //  new JSlider(JSlider.HORIZONTAL, 0,100,1);
   private boolean is_rel_freq = false;
   private boolean is_pos_freq = false;
   private Graph graph = null;
@@ -111,7 +189,8 @@ public class ConcordanceMosaic extends JFrame
   private String currentKeyword;
   JPanel tpanel = new JPanel(new BorderLayout());
   
-  private static String title = new String("MODNLP Plugin: ConcordanceMosaicViewer 0.3");
+  
+  private static String title = new String("MODNLP Plugin: ConcordanceMosaicViewer 0.4");
   private ConcordanceBrowser parent = null;
   private boolean guiLayoutDone = false;
   private Object[][] sentences;
@@ -134,7 +213,7 @@ public class ConcordanceMosaic extends JFrame
   public List<Double> columnHeigths = new ArrayList<Double>();
    public List<Integer> columnNumItems = new ArrayList<Integer>();
    public List<Integer> numStopwordsRemoved = new ArrayList<Integer>();
-  private boolean SliderFilter = false;
+  private boolean sliderFilter = true;
    private boolean filterStopwords = false;
   private BufferedReader input;
   private Map<String, Integer> wordCounts = null;
@@ -144,7 +223,6 @@ public class ConcordanceMosaic extends JFrame
   private int totalWidth = 98;
   private String[] metricStrings = { "Z-score", "Log-Log", "MI (EXP scale)", "MI3 (EXP scale)"};
   private JComboBox metricList = new JComboBox(metricStrings);
-  private JPanel psl = new JPanel();
   
   private boolean max_changed = false;
   
@@ -196,48 +274,58 @@ public class ConcordanceMosaic extends JFrame
     
     getContentPane().add(tpanel, BorderLayout.CENTER);
     
-    final JToggleButton frequencyButton = new JToggleButton("Column Frequency");
-    //final JToggleButton stopwordFrequencyButton = new JToggleButton("Column Frequency (No Stopwords)");
-    final JToggleButton relFrequencyButton = new JToggleButton("Collocation Strength (Global)");
-    final JToggleButton relFreqPosButton = new JToggleButton("Collocation Strength (Local)");
+    final JToggleButton frequencyButton =
+      new JToggleButton("Column Frequency");
+    final JToggleButton relFrequencyButton =
+      new JToggleButton("Collocation (Global)");
+    final JToggleButton relFreqPosButton =
+      new JToggleButton("Collocation (Local)");
+
+    // range slider settings
+    rangeSliderValue1.setHorizontalAlignment(JLabel.LEFT);
+    rangeSliderValue2.setHorizontalAlignment(JLabel.LEFT);        
+    rangeSlider.setPreferredSize(new Dimension(220,
+                                               rangeSlider.getPreferredSize().height));
+    rangeSlider.setMinimum(0);
+    rangeSlider.setMaximum(100);
     
+    rangeSlider.setValue(0);
+    rangeSlider.setUpperValue(100);
+        
+    // Initialize value display.
+    rangeSliderValue1.setText("0");
+    rangeSliderValue2.setText(rangeSlider.getExpValueString(rangeSlider.getExpUpperValue()));
+    final JLabel rangeSliderTitle = new JLabel("Frequency range", JLabel.CENTER);
+
     final JPanel pas = new JPanel();
+
+    rangeSliderPanel.add(rangeSliderValue1,
+        new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0,
+                               GridBagConstraints.NORTHWEST,
+                               GridBagConstraints.NONE,
+                               new Insets(0, 0, 3, 0), 0, 0));
+    rangeSliderPanel.add(rangeSliderTitle,
+        new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0,
+                               GridBagConstraints.NORTH,
+                               GridBagConstraints.NONE,
+                               new Insets(0, 0, 6, 0), 0, 0));
+   rangeSliderPanel.add(rangeSliderValue2,
+        new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0,
+                               GridBagConstraints.NORTHEAST,
+                               GridBagConstraints.NONE,
+                               new Insets(0, 0, 6, 0), 0, 0));
+    rangeSliderPanel.add(rangeSlider      ,
+        new GridBagConstraints(0, 2, 2, 1, 0.0, 0.0,
+                               GridBagConstraints.NORTHWEST,
+                               GridBagConstraints.NONE,
+                               new Insets(0, 0, 0, 0), 0, 0));
     
-    psl.setLayout(new BoxLayout(psl, BoxLayout.PAGE_AXIS));
     
-    JLabel sl = new JLabel("Min Frequency", JLabel.LEFT);
-    sl.setFont( new Font("Serif", Font.PLAIN, 11));
-    sl.setAlignmentX(Component.CENTER_ALIGNMENT);
-    
-    JLabel s2 = new JLabel("Max Frequency", JLabel.LEFT);
-    s2.setFont( new Font("Serif", Font.PLAIN, 11));
-    s2.setAlignmentX(Component.CENTER_ALIGNMENT);
-    
-    min_count_slider.setFont( new Font("Serif", Font.PLAIN, 8));
-    min_count_slider.setValue(0);
-    min_count_slider.setMinorTickSpacing(5);  
-    min_count_slider.setMajorTickSpacing(10);  
-    min_count_slider.setPaintTicks(true);  
-    min_count_slider.setPaintLabels(true);  
-    
-    max_count_slider.setFont( new Font("Serif", Font.PLAIN, 8));
-    max_count_slider.setValue(100);
-    max_count_slider.setMinorTickSpacing(5);  
-    max_count_slider.setMajorTickSpacing(10);  
-    max_count_slider.setPaintTicks(true);  
-    max_count_slider.setPaintLabels(true);  
-    
-    psl.add(sl);
-    psl.add(min_count_slider);
-    psl.add(s2);
-    psl.add(max_count_slider);
-   
-    
+    pas.add(rangeSliderPanel);
+    pas.add(stopWordsCheck);
     pas.add(frequencyButton);
-    //pas.add(stopwordFrequencyButton);
     pas.add(relFrequencyButton);
     pas.add(relFreqPosButton);
-    pas.add(psl);
     frequencyButton.setSelected(true);
     final JFrame window = this;
     
@@ -254,62 +342,52 @@ public class ConcordanceMosaic extends JFrame
           totalHeigth = c.getHeight()-36;
           }
           //                if( window.getExtendedState() != JFrame.MAXIMIZED_BOTH){
-          //                    MakeMosaic();
+          //                    makeMosaic();
           //                }
         }
       });
     
+
+    stopWordsCheck.setSelected(true);
+    stopWordsCheck.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          if(stopWordsCheck.isSelected()){
+            filterStopwords = false;
+          }
+          else {
+            filterStopwords = true;
+          }
+          makeMosaic();
+        }});
     
-    min_count_slider.addChangeListener(new ChangeListener() {
+    rangeSlider.addChangeListener(new ChangeListener() {
         public void stateChanged(ChangeEvent e) {
-          if (!min_count_slider.getValueIsAdjusting()) {
-            min_count = (int)min_count_slider.getValue();
-            if(frequencyButton.isSelected() &&( min_count >0 || max_changed)){
+          ExpRangeSlider slider = (ExpRangeSlider) e.getSource();
+          minFreq = slider.getExpValue();
+          maxFreq = slider.getExpUpperValue();
+          rangeSliderValue1.setText(slider.getExpValueString(minFreq));
+          rangeSliderValue2.setText(slider.getExpValueString(maxFreq));
+                      if(frequencyButton.isSelected() && ( minFreq >0 || max_changed)){
                 is_rel_freq = false;
                 is_pos_freq = false;
-                SliderFilter = true;
+                sliderFilter = true;
                 pas.remove(metricList);
-                MakeMosaic();  
+                makeMosaic();  
             }
             else{
                 is_rel_freq = false;
                 is_pos_freq = false;
-                SliderFilter = false;
+                sliderFilter = false;
                 pas.remove(metricList);
-                MakeMosaic();
+                makeMosaic();
             }
-          }
-        }});
-    
-    max_count_slider.addChangeListener(new ChangeListener() {
-        public void stateChanged(ChangeEvent e) {
-          if (!max_count_slider.getValueIsAdjusting()) {
-            max_count = (int)max_count_slider.getValue();
-            is_rel_freq = false;
-            is_pos_freq = false;
-            SliderFilter = true;
-            pas.remove(metricList);
-            MakeMosaic();
-            if(frequencyButton.isSelected() && (max_changed || min_count >0 )){
-                is_rel_freq = false;
-                is_pos_freq = false;
-                SliderFilter = true;
-                pas.remove(metricList);
-                MakeMosaic();
-            }
-            else{
-                is_rel_freq = false;
-                is_pos_freq = false;
-                SliderFilter = false;
-                pas.remove(metricList);
-                MakeMosaic();
-            }
-          }
-        }});
+        }
+      });
+
 
     metricList.addActionListener(new ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
-          MakeMosaic();
+          makeMosaic();
         }
       });
 
@@ -321,33 +399,17 @@ public class ConcordanceMosaic extends JFrame
           relFreqPosButton.setSelected(false);
           frequencyButton.setSelected(!is_rel_freq);
           relFrequencyButton.setSelected(is_rel_freq);
-//          stopwordFrequencyButton.setSelected(false);
-           if (min_count >0 ){
-            SliderFilter = true;
-           }else{
-               SliderFilter = false;
-           }
-          pas.add(psl);
+          sliderFilter = true;
+          stopWordsCheck.setEnabled(true);
+          rangeSlider.setEnabled(true);
+          rangeSliderValue1.setEnabled(true);
+          rangeSliderValue2.setEnabled(true);
+          rangeSliderTitle.setEnabled(true);
           pas.remove(metricList);
-          MakeMosaic();
+          makeMosaic();
         }
       });
     
-//    stopwordFrequencyButton.addActionListener(new ActionListener() {
-//        public void actionPerformed(java.awt.event.ActionEvent evt) {
-//          is_rel_freq = false;
-//          is_pos_freq = false;
-//          filterStopwords = true;
-//          relFreqPosButton.setSelected(false);
-//          frequencyButton.setSelected(false);
-//          relFrequencyButton.setSelected(false);
-//          stopwordFrequencyButton.setSelected(true);
-//          SliderFilter = true;
-//          pas.add(psl);
-//          pas.remove(metricList);
-//          MakeMosaic();
-//        }
-//      });
     
     relFrequencyButton.
       addActionListener(new ActionListener() {
@@ -360,10 +422,14 @@ public class ConcordanceMosaic extends JFrame
             frequencyButton.setSelected(!is_rel_freq);
             relFrequencyButton.setSelected(is_rel_freq);
 //            stopwordFrequencyButton.setSelected(false);
-            SliderFilter = false;
-            pas.remove(psl);
+            sliderFilter = false;
+            stopWordsCheck.setEnabled(false);
+            rangeSlider.setEnabled(false);
+            rangeSliderValue1.setEnabled(false);
+            rangeSliderValue2.setEnabled(false);
+            rangeSliderTitle.setEnabled(false);
             pas.add(metricList);
-            MakeMosaic();
+            makeMosaic();
           }
         });
     
@@ -378,10 +444,14 @@ public class ConcordanceMosaic extends JFrame
             frequencyButton.setSelected(false);
             relFrequencyButton.setSelected(false);
 //            stopwordFrequencyButton.setSelected(false);
-            SliderFilter = false;
-            pas.remove(psl);
+            sliderFilter = false;
+            stopWordsCheck.setEnabled(false);
+            rangeSlider.setEnabled(false);
+            rangeSliderValue1.setEnabled(false);
+            rangeSliderValue2.setEnabled(false);
+            rangeSliderTitle.setEnabled(false);
             pas.add(metricList);
-            MakeMosaic();
+            makeMosaic();
           }
         });
     
@@ -412,7 +482,7 @@ public class ConcordanceMosaic extends JFrame
     currentCorpusAddress = getRemoteCorpusAddress();
     if (!parent.isStandAlone())
       buildFreqHash();
-    MakeMosaic();
+    makeMosaic();
   }
 
   private String getRemoteCorpusAddress(){
@@ -492,7 +562,7 @@ public class ConcordanceMosaic extends JFrame
     return c;
   }
   
-  public void MakeMosaic() {
+  public void makeMosaic() {
     max_changed = false;  
     if (!parent.isStandAlone() &&
         ( wordCounts == null || !currentCorpusAddress.equals(getRemoteCorpusAddress())  ) )
@@ -526,60 +596,6 @@ public class ConcordanceMosaic extends JFrame
         
         sentenceIndexToVisualitems = new HashMap<Integer, ArrayList<VisualItem>>();
         wordToVisualitems = new HashMap<String, ArrayList<VisualItem>>();
-         ArrayList<String> stopwords = new ArrayList<>(Arrays.asList("i","me","my","myself","we","our","ours","ourselves","you","your","yours","yourself","yourselves","he","him","his","himself","she","her","hers","herself","it","its","itself","they","them","their","theirs","themselves","what","which","who","whom","this","that","these","those","am","is","are","was","were","be","been","being","have","has","had","having","do","does","did","doing","a","an","the","and","but","if","or","because","as","until","while","of","at","by","for","with","about","against","between","into","through","during","before","after","above","below","to","from","up","down","in","out","on","off","over","under","again","further","then","once","here","there","when","where","why","how","all","any","both","each","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","s","t","can","will","just","don","should","now"));
-        ArrayList<String> omcstopwords = new ArrayList<>(Arrays.asList("the",
-            "and",
-            "of",
-            "to",
-            "in",
-            "a",
-            "for",
-            "with",
-            "that ",
-            "is",
-            "on",
-            "are",
-            "as",
-            "be",
-            "by",
-            "from",
-            "have",
-            "or",
-            "this",
-            "at",
-            "s",
-            "an",
-            "their",
-            "it",
-            "was",
-            "has",
-            "more",
-            "were",
-            "all",
-            "they",
-            "which",
-            "other",
-            "these",
-            "been",
-            "can",
-            "also",
-            "among",
-            "should",
-            "such",
-            "will",
-            "than",
-            "there",
-            "but",
-            "one",
-            "including",
-            "may",
-            "had",
-            "between",
-            "about",
-            "et",
-            "al",
-            "through",
-            "its"));
         
         Tokeniser ss;
         int la = parent.getLanguage();
@@ -710,91 +726,91 @@ public class ConcordanceMosaic extends JFrame
             //if (  column[x].equalsIgnoreCase("*null*")) {
               Rel_freq_counter.put(column[x], 0.0000000001);
             } else {
-              if( SliderFilter ){
+              if( sliderFilter ){
                   Rel_freq_counter.put(column[x], (double) counter.get(column[x]));
               }
               else{
-                  double temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
-
+                double temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
+                
                 if(true){
-                    //Values for metric calculation
-                    double N =(total_no_tokens*1.0);
-                    double Fn = ( (nrows*1.0) );
-                    double Fnc = counter.get(column[x]);
-                    double Fc = (corpus_word_count*1.0);
-                    
-                    // Z score calculation
-                    double p = Fc / ( N - Fn );
-                    double E = p * Fn;
-                    //Yeats correction
-                    double zFnc = Fnc - 0.5;
-                    if(Fnc <E)
-                        zFnc =  Fnc + 0.5;
-                    double Z =  (zFnc -E) / Math.sqrt(E*(1-p));
-                    //default
-                    temp =Z;
-                    
-                    //Mutual information cubed calculation
-                    //Not taking log as a visua scaling choice. list order is still maintained
-                    double intermediate = (Math.pow(Fnc, 3)*N) / ( (Fnc + Fn)*( Fnc + Fc) );
-                    //double Mi3 = intermediate)/Math.log(2);
-                    double Mi3 = intermediate;
-                    
-                    //Mutual information calculation
-                    //Not taking log as a visua scaling choice. list order is still maintained
-                    intermediate = (Fnc*N)/(Fn*Fc);
-                    //double Mi =  Math.log(intermediate)/Math.log(2);
-                    double Mi =  intermediate;
-          
-                    // Observed expected metric calculation Visually the same as EXP(Mi)
-                    double ObservedExpected = (Fnc* (N-Fn))/ (Fn*Fc);
-                    
-                    //Kilgarif log-log score calculation
-                    double val1 = (Fnc*N) /(Fn*Fc);
-                    double A = Math.log(val1)/Math.log(2);
-                    double val2 = (Fnc);
-                    double B = Math.log(val2)/Math.log(2);
-                    double loglog = A*B;
-                    
-                    //log-likleyhood
-//                    double S = (Fnc + Math.log(Fnc))+(Fn + Math.log(Fn))+(Fc + Math.log(Fc))+(N + Math.log(N));
-//                    double D = ( (Fnc +Fn)* Math.log(Fnc+Fn) )+
-//                               ( (Fnc +Fc)* Math.log(Fnc+Fc) )+
-//                               ( (Fn + N)* Math.log(Fn + N) )+
-//                               ( (Fc + N)* Math.log(Fc + N) );
-//                    double A = (Fnc +Fn +Fn +N)* Math.log(D)
-                   
-
-                    //"Select metric
-                    String metric =(String) metricList.getSelectedItem();
-                    //System.out.println(metric);
-                    if(metric.equals("Modified MI")){
-                        temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
-                    }
-                    if(metric.equals("MI (EXP scale)"))
+                  //Values for metric calculation
+                  double N =(total_no_tokens*1.0);
+                  double Fn = ( (nrows*1.0) );
+                  double Fnc = counter.get(column[x]);
+                  double Fc = (corpus_word_count*1.0);
+                  
+                  // Z score calculation
+                  double p = Fc / ( N - Fn );
+                  double E = p * Fn;
+                  //Yeats correction
+                  double zFnc = Fnc - 0.5;
+                  if(Fnc <E)
+                    zFnc =  Fnc + 0.5;
+                  double Z =  (zFnc -E) / Math.sqrt(E*(1-p));
+                  //default
+                  temp =Z;
+                  
+                  //Mutual information cubed calculation
+                  //Not taking log as a visua scaling choice. list order is still maintained
+                  double intermediate = (Math.pow(Fnc, 3)*N) / ( (Fnc + Fn)*( Fnc + Fc) );
+                  //double Mi3 = intermediate)/Math.log(2);
+                  double Mi3 = intermediate;
+                  
+                  //Mutual information calculation
+                  //Not taking log as a visua scaling choice. list order is still maintained
+                  intermediate = (Fnc*N)/(Fn*Fc);
+                  //double Mi =  Math.log(intermediate)/Math.log(2);
+                  double Mi =  intermediate;
+                  
+                  // Observed expected metric calculation Visually the same as EXP(Mi)
+                  double ObservedExpected = (Fnc* (N-Fn))/ (Fn*Fc);
+                  
+                  //Kilgarif log-log score calculation
+                  double val1 = (Fnc*N) /(Fn*Fc);
+                  double A = Math.log(val1)/Math.log(2);
+                  double val2 = (Fnc);
+                  double B = Math.log(val2)/Math.log(2);
+                  double loglog = A*B;
+                  
+                  //log-likleyhood
+                  //                    double S = (Fnc + Math.log(Fnc))+(Fn + Math.log(Fn))+(Fc + Math.log(Fc))+(N + Math.log(N));
+                  //                    double D = ( (Fnc +Fn)* Math.log(Fnc+Fn) )+
+                  //                               ( (Fnc +Fc)* Math.log(Fnc+Fc) )+
+                  //                               ( (Fn + N)* Math.log(Fn + N) )+
+                  //                               ( (Fc + N)* Math.log(Fc + N) );
+                  //                    double A = (Fnc +Fn +Fn +N)* Math.log(D)
+                  
+                  
+                  //"Select metric
+                  String metric =(String) metricList.getSelectedItem();
+                  //System.out.println(metric);
+                  if(metric.equals("Modified MI")){
+                    temp = (((counter.get(column[x]) * 10.0) / nrows) / (((corpus_word_count * 10.0) / total_no_tokens)));
+                  }
+                  if(metric.equals("MI (EXP scale)"))
                     {
-                        temp=Mi;
+                      temp=Mi;
                     }
-                    if(metric.equals("MI3 (EXP scale)"))
+                  if(metric.equals("MI3 (EXP scale)"))
                     {
-                        temp=Mi3;
+                      temp=Mi3;
                     }
-                    if(metric.equals("Z-score"))
+                  if(metric.equals("Z-score"))
                     {
-                        temp=Z;
+                      temp=Z;
                     }
-                    if(metric.equals("Log-Log"))
+                  if(metric.equals("Log-Log"))
                     {
-                        temp=loglog;
+                      temp=loglog;
                     }
-//                    if(metric.equals("Obs/Exp"))
-//                    {
-//                        temp= ObservedExpected;
-//                    }
-                     
-                //    if(temp <0)
-                //        System.out.println(column[x]+" "+ temp);
-                    
+                  //                    if(metric.equals("Obs/Exp"))
+                  //                    {
+                  //                        temp= ObservedExpected;
+                  //                    }
+                  
+                  //    if(temp <0)
+                  //        System.out.println(column[x]+" "+ temp);
+                  
                 }
                 
                 if (temp < 1000000000000.0 ) {
@@ -848,13 +864,13 @@ public class ConcordanceMosaic extends JFrame
                 double val = Rel_freq_counter.get(column[x]);
                 double freqie = (counter.get(column[x]) * 0.01) / nrows;
                 //System.out.println(column[x]+  "  "+val);
-               
+                
                 n.set("rel_freq", false);
                 n.set("tooltipLayoutSwitch", true);
                 n.set("frequency", val / rel_column_length);
                 n.set("tooltip", val);
                 n.set("tooltipFreq", (Double) (counter.get(column[x]) * 1.0) / nrows);
-                           
+                
               } else {
                 double val = Rel_freq_counter.get(column[x]);
                 n.set("frequency", val);
@@ -866,53 +882,52 @@ public class ConcordanceMosaic extends JFrame
               
             } else {
               double val = (Double) (counter.get(column[x]) * 1.0) / nrows;
-              if (SliderFilter) {
+              if (sliderFilter) {
                 n.set("rel_freq", true);
                 n.set("tooltipLayoutSwitch", false);
                 n.set("tooltipFreq", 10.0);//(Double) (counter.get(column[x]) * 1.0) / nrows);
-
-                Double min_frequency = min_count*.01;
-                Double max_frequency = max_count *.01; 
+                
+                Double min_frequency = minFreq/100;//min_count*.01;
+                Double max_frequency = maxFreq/100;//max_count *.01; 
                 if (min_frequency >= max_frequency){
                   n.set("frequency", 0.0000000001);
                   n.set("tooltip", 0.0000000001);
                   n.set("makeInvis", true);
                 }else{
-                    if (val >=  max_frequency && i != 4) { //threshold
+                  if (val >=  max_frequency && i != 4) { //threshold
+                    n.set("frequency", 0.0000000001);
+                    n.set("tooltip", 0.0000000001);
+                    n.set("makeInvis", true);
+                    max_changed = true;
+                    //System.out.println("max_changed");
+                  }
+                  else {
+                    if(val < min_frequency ){
                       n.set("frequency", 0.0000000001);
                       n.set("tooltip", 0.0000000001);
                       n.set("makeInvis", true);
-                      max_changed = true;
-                      //System.out.println("max_changed");
-                    } else {
-                      if(val < min_frequency ){
-                        n.set("frequency", 0.0000000001);
-                        n.set("tooltip", 0.0000000001);
-                        n.set("makeInvis", true);
-                      }
-                      else{
-                          if(filterStopwords){
-                              if(stopwords.contains(column[x])){
-                                  n.set("frequency", 0.0000000001);
-                                  n.set("tooltip", 0.0000000001);
-                                  n.set("makeInvis", true);
-                                  stopwordsRemoved+=1;
-                              }else{
-                                stopword_column_length += val;
-                                n.set("frequency", val);
-                                n.set("tooltip", val);
-                                num_items+=1;
-                              }
-                          }else{
-                            stopword_column_length += val;
-                            n.set("frequency", val);
-                            n.set("tooltip", val);
-                            num_items+=1;
-                          }
-                          
-                       
+                    }
+                    else{
+                      if(filterStopwords){
+                        if(stopwords.contains(column[x])){
+                          n.set("frequency", 0.0000000001);
+                          n.set("tooltip", 0.0000000001);
+                          n.set("makeInvis", true);
+                          //stopwordsRemoved+=1;
+                        }else{
+                          stopword_column_length += val;
+                          n.set("frequency", val);
+                          n.set("tooltip", val);
+                          num_items+=1;
+                        }
+                      }else{
+                        stopword_column_length += val;
+                        n.set("frequency", val);
+                        n.set("tooltip", val);
+                        num_items+=1;
                       }
                     }
+                  }
                 }
               } else { // if ! stopwords
                 n.set("frequency", val);
@@ -957,7 +972,7 @@ public class ConcordanceMosaic extends JFrame
           // and or calculate value for tooltip
           calculateRelFreqHeigths();
         }
-        if (!is_rel_freq && SliderFilter) {
+        if (!is_rel_freq && sliderFilter) {
           calculateStopwordFreqHeigths();
         }
         setDisplay();
@@ -1192,13 +1207,13 @@ public class ConcordanceMosaic extends JFrame
   public void run() {
     if (!parent.isStandAlone())
       buildFreqHash();
-    MakeMosaic();
+    makeMosaic();
   }
 
   @Override
   public void concordanceStateChanged() {
     //stop();
-    MakeMosaic();
+    makeMosaic();
     //start();
 
   }

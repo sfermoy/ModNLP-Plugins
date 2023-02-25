@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*/
+ */
 package org.modnlp.mosaic;
 
 import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
 
 import javax.swing.JPopupMenu;
 import javax.swing.JToolTip;
@@ -42,48 +43,53 @@ import prefuse.util.StrokeLib;
 
 
 public class MosaicTooltip extends ControlAdapter implements Control {
-    private ConcordanceBrowser p=null;
-    
-    public MosaicTooltip(ConcordanceBrowser parent){
-        p=parent;
-        ToolTipManager.sharedInstance().setDismissDelay(Integer.MAX_VALUE);
+  private ConcordanceBrowser p=null;
+  private DecimalFormat df = new DecimalFormat("#.##");
+  
+  public MosaicTooltip(ConcordanceBrowser parent){
+    p=parent;
+    ToolTipManager.sharedInstance().setDismissDelay(Integer.MAX_VALUE);
        
-    }
+  }
    
     
-	public void itemEntered(VisualItem item, MouseEvent e) 
-	{
-		if(item instanceof NodeItem)
-		{
-                        //ToolTipManager.sharedInstance().setEnabled(true);
-			String text = ((String) item.get("word"));
-                        int count =((int) item.get("count"));
-			double fq = (Double) item.get("tooltip");
-                        boolean layout = (boolean) item.get("tooltipLayoutSwitch");
-                        String metric = (String) item.get("metric");
-			fq = Math.round(fq*10);
-                        fq = fq/10;
-                        Display d = (Display)e.getSource();
-                        d.setToolTipText(null); 
-                        
-                        //if collocation strength view and not middle col
-                        if(layout && (Integer)item.get("column") !=4 ){
-                            double fq1 = (Double) item.get("tooltipFreq");
-                            fq1 = Math.round(fq1*10000);
-                            fq1 = fq1/100.0;
-                            d.setToolTipText("Text: \"" + text +"\" \n " +metric+": " + fq +" Frequency: " + fq1+" Count: " + count);
-                        }
-                        else
-                             d.setToolTipText("Text: \"" + text +"\" \n " +" Frequency: " + fq  +" Count: " + count);
-                       
-		}
-	}
-        
-        public void itemExited(VisualItem item, MouseEvent e) {
+  public void itemEntered(VisualItem item, MouseEvent e) 
+  {
+    if(item instanceof NodeItem)
+      {
+        //ToolTipManager.sharedInstance().setEnabled(true);
+        String text = ((String) item.get("word"));
+        int count =((int) item.get("count"));
+        double fq = (Double) item.get("tooltip");
+        boolean layout = (boolean) item.get("tooltipLayoutSwitch");
+        String metric = (String) item.get("metric");
+        fq = fq*100;
         Display d = (Display)e.getSource();
-        d.setToolTipText(null);          
+        d.setToolTipText(null); 
+                        
+        //if collocation strength view and not middle col
+        if(layout && (Integer)item.get("column") !=4 ){
+          double fq1 = (Double) item.get("tooltipFreq");
+          fq1 = fq1*100;
+          //fq1 = fq1/100.0;
+          d.setToolTipText("Text: \"" + text +
+                           "\" \n " + metric+": " + fq +
+                           " Frequency: " + df.format(fq1)+
+                           " Count: " + count);
+        }
+        else
+          d.setToolTipText("Text: \"" + text +
+                           "\" \n " +" Frequency: "+df.format(fq)+
+                           " Count: " + count);
+                       
+      }
+  }
         
-    }
+  public void itemExited(VisualItem item, MouseEvent e) {
+    Display d = (Display)e.getSource();
+    d.setToolTipText(null);          
+        
+  }
 }
 
 
