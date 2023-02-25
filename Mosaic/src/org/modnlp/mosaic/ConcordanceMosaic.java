@@ -176,6 +176,7 @@ public class ConcordanceMosaic extends JFrame
   private JLabel rangeSliderValue1 = new JLabel();
   private JLabel rangeSliderValue2 = new JLabel();
   private final ExpRangeSlider rangeSlider = new ExpRangeSlider();
+
   
   //private final JSlider min_count_slider =
   //  new JSlider(JSlider.HORIZONTAL, 0,40,1);
@@ -211,8 +212,8 @@ public class ConcordanceMosaic extends JFrame
   private BufferedReader input2;
   private int total_no_tokens;
   public List<Double> columnHeigths = new ArrayList<Double>();
-   public List<Integer> columnNumItems = new ArrayList<Integer>();
-   public List<Integer> numStopwordsRemoved = new ArrayList<Integer>();
+  public List<Integer> columnNumItems = new ArrayList<Integer>();
+  public List<Integer> numStopwordsRemoved = new ArrayList<Integer>();
   private boolean sliderFilter = true;
    private boolean filterStopwords = false;
   private BufferedReader input;
@@ -275,7 +276,7 @@ public class ConcordanceMosaic extends JFrame
     getContentPane().add(tpanel, BorderLayout.CENTER);
     
     final JToggleButton frequencyButton =
-      new JToggleButton("Column Frequency");
+      new JToggleButton("Frequency");
     final JToggleButton relFrequencyButton =
       new JToggleButton("Collocation (Global)");
     final JToggleButton relFreqPosButton =
@@ -284,7 +285,7 @@ public class ConcordanceMosaic extends JFrame
     // range slider settings
     rangeSliderValue1.setHorizontalAlignment(JLabel.LEFT);
     rangeSliderValue2.setHorizontalAlignment(JLabel.LEFT);        
-    rangeSlider.setPreferredSize(new Dimension(220,
+    rangeSlider.setPreferredSize(new Dimension(190,
                                                rangeSlider.getPreferredSize().height));
     rangeSlider.setMinimum(0);
     rangeSlider.setMaximum(100);
@@ -296,7 +297,12 @@ public class ConcordanceMosaic extends JFrame
     rangeSliderValue1.setText("0");
     rangeSliderValue2.setText(rangeSlider.getExpValueString(rangeSlider.getExpUpperValue()));
     final JLabel rangeSliderTitle = new JLabel("Frequency range", JLabel.CENTER);
-
+    Font sfont = rangeSliderTitle.getFont();
+    sfont = sfont.deriveFont(sfont.getSize()-4);
+    rangeSliderTitle.setFont(sfont);
+    rangeSliderValue1.setFont(sfont);
+    rangeSliderValue2.setFont(sfont);
+    
     final JPanel pas = new JPanel();
 
     rangeSliderPanel.add(rangeSliderValue1,
@@ -395,7 +401,7 @@ public class ConcordanceMosaic extends JFrame
         public void actionPerformed(java.awt.event.ActionEvent evt) {
           is_rel_freq = false;
           is_pos_freq = false;
-          filterStopwords = false;
+          //filterStopwords = false;
           relFreqPosButton.setSelected(false);
           frequencyButton.setSelected(!is_rel_freq);
           relFrequencyButton.setSelected(is_rel_freq);
@@ -417,7 +423,7 @@ public class ConcordanceMosaic extends JFrame
             //stop();
             is_rel_freq = true;
             is_pos_freq = false;
-            filterStopwords = false;
+            //filterStopwords = false;
             relFreqPosButton.setSelected(false);
             frequencyButton.setSelected(!is_rel_freq);
             relFrequencyButton.setSelected(is_rel_freq);
@@ -439,7 +445,7 @@ public class ConcordanceMosaic extends JFrame
             //stop();
             is_rel_freq = true;
             is_pos_freq = true;
-            filterStopwords = false;
+            //filterStopwords = false;
             relFreqPosButton.setSelected(true);
             frequencyButton.setSelected(false);
             relFrequencyButton.setSelected(false);
