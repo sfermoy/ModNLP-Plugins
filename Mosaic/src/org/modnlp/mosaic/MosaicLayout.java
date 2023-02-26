@@ -227,7 +227,7 @@ public class MosaicLayout extends Layout {
           }
           int totalPix = 0;
           for(int x = 0; x <= num_items; x++){
-            if (itemNumber >= colLength)
+            if (x >= colLength)
               break;
             VisualItem modify = items_in_coulmn.get(x);
             setY(modify, null, modify.getY() + totalPix);

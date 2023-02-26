@@ -22,7 +22,7 @@ class:
 	$(JAVAC) $(JAVACFLAGS) src/org/modnlp/mosaic/*.java
 
 jar: class
-	java -jar ../autojar.jar -o $(TARGET_JAR) -vc classes:lib/prefuse.jar:lib/colt.jar:lib/je.jar -b  org/modnlp/mosaic/*.class
+	java -jar ../autojar.jar -o $(TARGET_JAR) -p src -vc classes:lib/prefuse.jar:lib/colt.jar:lib/je.jar -b  org/modnlp/mosaic/*.class stopwords*.txt
 
 sign: jar
 	$(JARSIGNER) $(JARSIGNER_OPT) $(TARGET_JAR) gok 

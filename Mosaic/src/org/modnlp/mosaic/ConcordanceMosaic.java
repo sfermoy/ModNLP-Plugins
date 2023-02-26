@@ -105,63 +105,9 @@ public class ConcordanceMosaic extends JFrame
   public static final int GROW = 1;
   public static final int PRUNE = 2;
 
-  public static final ArrayList<String> stopwords = new ArrayList<>(Arrays.asList("i","me","my","myself","we","our","ours","ourselves","you","your","yours","yourself","yourselves","he","him","his","himself","she","her","hers","herself","it","its","itself","they","them","their","theirs","themselves","what","which","who","whom","this","that","these","those","am","is","are","was","were","be","been","being","have","has","had","having","do","does","did","doing","a","an","the","and","but","if","or","because","as","until","while","of","at","by","for","with","about","against","between","into","through","during","before","after","above","below","to","from","up","down","in","out","on","off","over","under","again","further","then","once","here","there","when","where","why","how","all","any","both","each","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","s","t","can","will","just","don","should","now"));
-  public static final ArrayList<String> omcstopwords =
-    new ArrayList<>(Arrays.asList("the",
-                                  "and",
-                                  "of",
-                                  "to",
-                                  "in",
-                                  "a",
-                                  "for",
-                                  "with",
-                                  "that ",
-                                  "is",
-                                  "on",
-                                  "are",
-                                  "as",
-                                  "be",
-                                  "by",
-                                  "from",
-                                  "have",
-                                  "or",
-                                  "this",
-                                  "at",
-                                  "s",
-                                  "an",
-                                  "their",
-                                  "it",
-                                  "was",
-                                  "has",
-                                  "more",
-                                  "were",
-                                  "all",
-                                  "they",
-                                  "which",
-                                  "other",
-                                  "these",
-                                  "been",
-                                  "can",
-                                  "also",
-                                  "among",
-                                  "should",
-                                  "such",
-                                  "will",
-                                  "than",
-                                  "there",
-                                  "but",
-                                  "one",
-                                  "including",
-                                  "may",
-                                  "had",
-                                  "between",
-                                  "about",
-                                  "et",
-                                  "al",
-                                  "through",
-                                  "its"));
-
+  private MosaicStopWordList stopwords;
   private JCheckBox stopWordsCheck = new JCheckBox("Stopwords");
+  private int language = -1;
   
   // NO LONGER USED
   //private int min_count = 0;
@@ -191,7 +137,7 @@ public class ConcordanceMosaic extends JFrame
   JPanel tpanel = new JPanel(new BorderLayout());
   
   
-  private static String title = new String("MODNLP Plugin: ConcordanceMosaicViewer 0.4");
+  private static String title = new String("MODNLP Plugin: ConcordanceMosaicViewer 0.5");
   private ConcordanceBrowser parent = null;
   private boolean guiLayoutDone = false;
   private Object[][] sentences;
@@ -337,6 +283,7 @@ public class ConcordanceMosaic extends JFrame
     
     // metricList.setSelectedIndex(0);
 
+    /*
     this.getRootPane().addComponentListener(new ComponentAdapter() {
         public void componentResized(ComponentEvent e) {
           Component c =(Component)e.getSource();
@@ -352,7 +299,7 @@ public class ConcordanceMosaic extends JFrame
           //                }
         }
       });
-    
+    */
 
     stopWordsCheck.setSelected(true);
     stopWordsCheck.addActionListener(new ActionListener() {
@@ -571,7 +518,8 @@ public class ConcordanceMosaic extends JFrame
   public void makeMosaic() {
     max_changed = false;  
     if (!parent.isStandAlone() &&
-        ( wordCounts == null || !currentCorpusAddress.equals(getRemoteCorpusAddress())  ) )
+        ( wordCounts == null ||
+          !currentCorpusAddress.equals(getRemoteCorpusAddress())  ) )
       {
         System.err.println(currentCorpusAddress+"!="+getRemoteCorpusAddress());
         currentCorpusAddress = getRemoteCorpusAddress();
@@ -609,20 +557,47 @@ public class ConcordanceMosaic extends JFrame
         switch (la) {
         case modnlp.Constants.LANG_EN:
           ss = new TokeniserRegex("");
+          if (language != la)
+            stopwords = new MosaicStopWordList("EN");
+          break;
+        case modnlp.Constants.LANG_GR:
+          ss = new TokeniserRegex("");
+          if (language != la)
+            stopwords = new MosaicStopWordList("GR");
+          break;
+        case modnlp.Constants.LANG_LN:
+          ss = new TokeniserRegex("");
+          if (language != la)
+            stopwords = new MosaicStopWordList("LN");
           break;
         case modnlp.Constants.LANG_JP:
           ss = new TokeniserJP("");
+          if (language != la)
+            stopwords = new MosaicStopWordList("JP");
           break;
+        case modnlp.Constants.LANG_AR:
+          ss = new TokeniserRegex("");
+          if (language != la)
+            stopwords = new MosaicStopWordList("AR");
+          break;
+
         default:
           ss = new TokeniserRegex("");
+          if (language != la)
+            stopwords = new MosaicStopWordList("ALL");
           break;
         }
+
+        if (language != la)
+          language = la;
+        
         int current_sentence = 0;
         nrows = parent.getConcordanceVector().size();
         sentences = new Object[nrows][];
         double rel_column_length = 0;
         double stopword_column_length = 0;
-        for (Iterator<ConcordanceObject> p = parent.getConcordanceVector().iterator(); p.hasNext();) {
+        for (Iterator<ConcordanceObject> p =
+               parent.getConcordanceVector().iterator(); p.hasNext();) {
           ConcordanceObject co = p.next();
           if (co == null) {
             break;
@@ -828,7 +803,7 @@ public class ConcordanceMosaic extends JFrame
             }
             rel_column_length += Rel_freq_counter.get(column[x]);
           }
-          //custom sorts for reletive frequency and simple frequency visulisation
+          //custom sorts for relative frequency and simple frequency visualisation
           if (!is_rel_freq) {
             Collections.sort(list1, new Comparator<String>() {
                 @Override
@@ -914,7 +889,7 @@ public class ConcordanceMosaic extends JFrame
                       n.set("makeInvis", true);
                     }
                     else{
-                      if(filterStopwords){
+                      if(filterStopwords  && i != 4){
                         if(stopwords.contains(column[x])){
                           n.set("frequency", 0.0000000001);
                           n.set("tooltip", 0.0000000001);
