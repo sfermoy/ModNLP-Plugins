@@ -3,7 +3,7 @@
  '(jdee-project-name "Mosaic")
  '(jdee-db-option-application-args nil)
  '(jdee-db-read-app-args t)
- '(jdee-global-classpath (quote ("." "../lib/teccli.jar" "../lib/idx.jar" "../lib/prefuse.jar" "../lib/colt.jar" "../lib/je.jar" "../../../src/"))) ;; "../../../src/")))
+ '(jdee-global-classpath (quote ("." "../../../src/" "../lib/teccli.jar" "../lib/idx.jar" "../lib/prefuse.jar" "../lib/colt.jar" "../lib/je.jar"))) ;; "../../../src/")))
  '(jdee-run-working-directory ".")
  '(jdee-run-option-application-args nil)
  '(jdee-run-read-app-args t)

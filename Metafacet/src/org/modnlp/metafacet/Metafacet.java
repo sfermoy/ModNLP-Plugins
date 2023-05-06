@@ -145,7 +145,7 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
 //        if("http://www.genealogiesofknowledge.net/gok/headers-gr/".equals(parent.getHeaderBaseUrl()))
 //                    newLang = 5;
         
-        String filename = dirName + File.separator + parent.getRemoteWebcli() + "metadata.out";
+        String filename = dirName + File.separator + parent.getRemoteWebcliEnc() + "metadata.out";
         //setup
         FileInputStream fis = null;
         ObjectInputStream in = null;
@@ -239,7 +239,7 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
             File directory = new File(dirName);
             if(!directory.exists())
                 directory.mkdirs();
-            String filename = dirName + File.separator +  parent.getRemoteWebcli() + "metadata.out";
+            String filename = dirName + File.separator +  parent.getRemoteWebcliEnc() + "metadata.out";
             fos = new FileOutputStream(filename);
             out = new ObjectOutputStream(fos);
             out.writeObject(headers);
@@ -296,7 +296,7 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
         FileOutputStream fos = null;
         ObjectOutputStream out = null;
         try {
-            String filename = dirName + File.separator+"cdate"+parent.getRemoteWebcli()+".out";
+            String filename = dirName + File.separator+"cdate"+parent.getRemoteWebcliEnc()+".out";
             fos = new FileOutputStream(filename);
             out = new ObjectOutputStream(fos);
             Date today = Calendar.getInstance().getTime();        
@@ -313,7 +313,7 @@ public class Metafacet implements Plugin, Runnable, HeaderCompleteListener{
         String result = "";
         FileInputStream fis = null;
         ObjectInputStream in = null;
-        String filename = dirName + File.separator+"cdate"+parent.getRemoteWebcli()+".out";
+        String filename = dirName + File.separator+"cdate"+parent.getRemoteWebcliEnc()+".out";
         File test = new File(filename);
         if(test.exists()){
             try{

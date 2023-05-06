@@ -1,6 +1,6 @@
 /**
  * (c) 2014 S Sheehan <shane.sheehan@tcd.ie>
- * 2016 S Sheehan, S Luz <luzs@acm.org>
+ * 2016 S Sheehan, Saturnino Luz <luzs@acm.org>
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -236,7 +236,7 @@ public class ConcordanceMosaic extends JFrame
     rangeSlider.setMinimum(0);
     rangeSlider.setMaximum(100);
     
-    rangeSlider.setValue(0);
+    rangeSlider.setLowerValue(0);
     rangeSlider.setUpperValue(100);
         
     // Initialize value display.
@@ -320,20 +320,22 @@ public class ConcordanceMosaic extends JFrame
           maxFreq = slider.getExpUpperValue();
           rangeSliderValue1.setText(slider.getExpValueString(minFreq));
           rangeSliderValue2.setText(slider.getExpValueString(maxFreq));
-                      if(frequencyButton.isSelected() && ( minFreq >0 || max_changed)){
-                is_rel_freq = false;
-                is_pos_freq = false;
-                sliderFilter = true;
-                pas.remove(metricList);
-                makeMosaic();  
+          if (!slider.getValueIsAdjusting()){
+            if(frequencyButton.isSelected() && ( minFreq >0 || max_changed)){
+              is_rel_freq = false;
+              is_pos_freq = false;
+              sliderFilter = true;
+              pas.remove(metricList);
+              makeMosaic();  
             }
             else{
-                is_rel_freq = false;
-                is_pos_freq = false;
-                sliderFilter = false;
-                pas.remove(metricList);
-                makeMosaic();
+              is_rel_freq = false;
+              is_pos_freq = false;
+              sliderFilter = false;
+              pas.remove(metricList);
+              makeMosaic();
             }
+          }
         }
       });
 
